@@ -15,6 +15,7 @@ class _SignupPageState extends State<SignupPage> {
   final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
+  bool _obscurePassword = true;
   Future<void> _signup() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -119,11 +120,22 @@ class _SignupPageState extends State<SignupPage> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock_outline, color: AppColors.blueGrey),
+                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.blueGrey),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: AppColors.blueGrey,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                 ),
                 const SizedBox(height: 24),
                 _isLoading
