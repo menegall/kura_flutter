@@ -107,4 +107,20 @@ class PupilsService {
   Future<void> deletePupil(String pupilId) async {
     await _supabase.from('pupils').delete().eq('id', pupilId);
   }
+
+  // Aggiorna un pupillo esistente nel database
+  Future<void> updatePupil({
+    required String id,
+    required String name,
+    required double maxHours,
+    required double tarif,
+    required double kmTarif,
+  }) async {
+    await _supabase.from('pupils').update({
+      'name': name,
+      'max_hours': maxHours,
+      'tarif': tarif,
+      'km_tarif': kmTarif,
+    }).eq('id', id);
+  }
 }

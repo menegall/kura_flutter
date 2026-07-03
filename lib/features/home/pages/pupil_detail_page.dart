@@ -4,12 +4,15 @@ import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
 import 'add_activity_page.dart';
+import 'edit_pupil_page.dart';
+
 class PupilDetailPage extends StatefulWidget {
   final Pupil pupil;
   const PupilDetailPage({super.key, required this.pupil});
   @override
   State<PupilDetailPage> createState() => _PupilDetailPageState();
 }
+
 class _PupilDetailPageState extends State<PupilDetailPage> {
   final _pupilsService = PupilsService();
   late Pupil _pupil;
@@ -22,6 +25,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
     _pupil = widget.pupil;
     _loadData();
   }
+
   Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
@@ -44,6 +48,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
       });
     }
   }
+  
   Future<void> _navigateToAddActivity() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
@@ -54,6 +59,18 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
       _loadData();
     }
   }
+
+  Future<void> _navigateToEditPupil() async {
+    final result = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (context) => EditPupilPage(pupil: _pupil),
+      ),
+    );
+    if (result == true) {
+      _loadData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Calcolo della percentuale
@@ -75,8 +92,14 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: _navigateToEditPupil,
+            tooltip: 'Modifica',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadData,
+            tooltip: 'Aggiorna',
           ),
         ],
       ),
