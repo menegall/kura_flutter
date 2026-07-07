@@ -154,6 +154,26 @@ class _HomePageState extends State<HomePage> {
     if (_pupils == null || _pupils!.isEmpty) {
       return _buildEmptyState();
     }
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth > 600) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16.0),
+        physics: const AlwaysScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: screenWidth > 900 ? 3 : 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          mainAxisExtent: 140,
+        ),
+        itemCount: _pupils!.length,
+        itemBuilder: (context, index) {
+          final pupil = _pupils![index];
+          return _buildPupilCard(pupil, useMargin: false);
+        },
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16.0),
       physics: const AlwaysScrollableScrollPhysics(),
@@ -164,7 +184,7 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-  Widget _buildPupilCard(Pupil pupil) {
+  Widget _buildPupilCard(Pupil pupil, {bool useMargin = true}) {
     final double rawPercent = pupil.maxHours > 0 ? (pupil.workedHours / pupil.maxHours) : 0.0;
     final double percent = rawPercent.clamp(0.0, 1.0);
     final double remainingHours = pupil.maxHours - pupil.workedHours;
@@ -178,7 +198,7 @@ class _HomePageState extends State<HomePage> {
     }
     return Card(
       color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 16.0),
+      margin: useMargin ? const EdgeInsets.only(bottom: 16.0) : EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: const BorderSide(color: AppColors.beige, width: 1),

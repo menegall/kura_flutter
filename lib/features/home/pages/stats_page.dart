@@ -21,7 +21,6 @@ class _StatsPageState extends State<StatsPage> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isExporting = false;
-
   List<Pupil>? _pupils;
   Pupil? _selectedPupil;
   List<Activity>? _allActivities; // Tutte le attività del pupillo selezionato
@@ -31,7 +30,8 @@ class _StatsPageState extends State<StatsPage> {
   DateTime _selectedDay = DateTime.now();
   int _selectedMonth = DateTime.now().month;
   int _selectedYear = DateTime.now().year;
-  bool _sortAscending = false; // false = più recenti prima (discendente), true = più vecchie prima (crescente)
+  bool _sortAscending =
+      false; // false = più recenti prima (discendente), true = più vecchie prima (crescente)
   // Calcoli delle statistiche
   double _totalHours = 0.0;
   double _callHours = 0.0;
@@ -42,10 +42,23 @@ class _StatsPageState extends State<StatsPage> {
   double _totalKm = 0.0;
   double _totalStamps = 0.0;
   final List<String> _monthsItalian = [
-    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    'Gennaio',
+    'Febbraio',
+    'Marzo',
+    'Aprile',
+    'Maggio',
+    'Giugno',
+    'Luglio',
+    'Agosto',
+    'Settembre',
+    'Ottobre',
+    'Novembre',
+    'Dicembre',
   ];
-  final List<int> _years = List.generate(10, (index) => DateTime.now().year - 5 + index);
+  final List<int> _years = List.generate(
+    10,
+    (index) => DateTime.now().year - 5 + index,
+  );
   @override
   void initState() {
     super.initState();
@@ -76,7 +89,7 @@ class _StatsPageState extends State<StatsPage> {
       });
     }
   }
-  
+
   Future<void> _loadActivitiesForSelectedPupil() async {
     if (_selectedPupil == null) return;
     setState(() {
@@ -107,7 +120,8 @@ class _StatsPageState extends State<StatsPage> {
       final date = act.activityDate;
       bool matches = false;
       if (_selectedPeriod == 'Giorno') {
-        matches = date.year == _selectedDay.year &&
+        matches =
+            date.year == _selectedDay.year &&
             date.month == _selectedDay.month &&
             date.day == _selectedDay.day;
       } else if (_selectedPeriod == 'Mese') {
@@ -155,14 +169,12 @@ class _StatsPageState extends State<StatsPage> {
           break;
       }
     }
-
     // Ordina la lista in base alla preferenza dell'utente
     if (_sortAscending) {
       tempFiltered.sort((a, b) => a.activityDate.compareTo(b.activityDate));
     } else {
       tempFiltered.sort((a, b) => b.activityDate.compareTo(a.activityDate));
     }
-
     setState(() {
       _filteredActivities = tempFiltered;
       _totalHours = tempTotalHours;
@@ -247,7 +259,9 @@ class _StatsPageState extends State<StatsPage> {
       // Chiudi il dialog di caricamento
       if (mounted) Navigator.of(context).pop();
       if (response.statusCode != 200) {
-        throw Exception('Errore server: ${response.statusCode} - ${response.body}');
+        throw Exception(
+          'Errore server: ${response.statusCode} - ${response.body}',
+        );
       }
       final pdfBytes = response.bodyBytes;
       await Printing.layoutPdf(
@@ -257,7 +271,7 @@ class _StatsPageState extends State<StatsPage> {
     } catch (e) {
       if (mounted) {
         // Chiudi il caricamento se ancora attivo (il dialog è visualizzato prima della chiamata)
-        // Per sicurezza, verifichiamo che il dialog sia presente. 
+        // Per sicurezza, verifichiamo che il dialog sia presente.
         // Se si è verificato un errore immediato prima di caricare la risposta, pop() chiude il dialog.
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -276,6 +290,8 @@ class _StatsPageState extends State<StatsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 800;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Statistiche Interattive'),
@@ -291,121 +307,175 @@ class _StatsPageState extends State<StatsPage> {
         ],
       ),
       body: _isLoading && _pupils == null
-          ? const Center(child: CircularProgressIndicator(color: AppColors.terraCotta))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.terraCotta),
+            )
           : _errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_errorMessage!, style: const TextStyle(color: AppColors.terraCotta)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(onPressed: _loadPupils, child: const Text('Riprova')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _errorMessage!,
+                    style: const TextStyle(color: AppColors.terraCotta),
                   ),
-                )
-              : _pupils == null || _pupils!.isEmpty
-                  ? _buildNoPupilsState()
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // 1. Dropdown Selezione Pupillo
-                          DropdownButtonFormField<Pupil>(
-                            initialValue: _selectedPupil,
-                            decoration: const InputDecoration(
-                              labelText: 'Seleziona Pupillo',
-                              prefixIcon: Icon(Icons.person_outline, color: AppColors.blueGrey),
-                            ),
-                            items: _pupils!.map((pupil) {
-                              return DropdownMenuItem<Pupil>(
-                                value: pupil,
-                                child: Text(pupil.name),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _selectedPupil = value;
-                                  _loadActivitiesForSelectedPupil();
-                                });
-                              }
-                            },
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadPupils,
+                    child: const Text('Riprova'),
+                  ),
+                ],
+              ),
+            )
+          : _pupils == null || _pupils!.isEmpty
+          ? _buildNoPupilsState()
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: isWide
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Colonna Sinistra (Filtri e Riepilogo)
+                        Expanded(
+                          flex: 6,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildPupilSelector(),
+                              const SizedBox(height: 20),
+                              _buildPeriodSelector(),
+                              const SizedBox(height: 16),
+                              _buildFilterControls(context),
+                              const SizedBox(height: 24),
+                              _isLoading
+                                  ? const Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(24.0),
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.terraCotta,
+                                        ),
+                                      ),
+                                    )
+                                  : _buildStatsSummary(),
+                            ],
                           ),
-                          const SizedBox(height: 20),
-                          // 2. Selettore Periodo (Giorno / Mese / Anno)
-                          _buildPeriodSelector(),
-                          const SizedBox(height: 16),
-                          // 3. Controlli Dinamici del Filtro Temporale
-                          _buildFilterControls(context),
-                          const SizedBox(height: 24),
-                          // Caricamento attività specifiche
-                          _isLoading
-                              ? const Center(child: Padding(
+                        ),
+                        const SizedBox(width: 24),
+                        // Colonna Destra (Attività Filtrate)
+                        Expanded(
+                          flex: 5,
+                          child: _isLoading
+                              ? const SizedBox()
+                              : _buildFilteredActivitiesSection(),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildPupilSelector(),
+                        const SizedBox(height: 20),
+                        _buildPeriodSelector(),
+                        const SizedBox(height: 16),
+                        _buildFilterControls(context),
+                        const SizedBox(height: 24),
+                        _isLoading
+                            ? const Center(
+                                child: Padding(
                                   padding: EdgeInsets.all(24.0),
-                                  child: CircularProgressIndicator(color: AppColors.terraCotta),
-                                ))
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    // 4. Riassunto Statistiche
-                                    _buildStatsSummary(),
-                                    const SizedBox(height: 24),
-                                    // 5. Lista Attività Filtrate
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        const Text(
-                                          'Attività nel periodo',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.darkGreen,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(
-                                            _sortAscending
-                                                ? Icons.arrow_upward
-                                                : Icons.arrow_downward,
-                                            color: AppColors.darkGreen,
-                                            size: 20,
-                                          ),
-                                          tooltip: _sortAscending
-                                              ? 'Ordina per: Meno recenti prima'
-                                              : 'Ordina per: Più recenti prima',
-                                          onPressed: () {
-                                            setState(() {
-                                              _sortAscending = !_sortAscending;
-                                              _filterAndCalculate();
-                                            });
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    _filteredActivities.isEmpty
-                                        ? _buildEmptyActivitiesState()
-                                        : ListView.builder(
-                                            shrinkWrap: true,
-                                            physics: const NeverScrollableScrollPhysics(),
-                                            itemCount: _filteredActivities.length,
-                                            itemBuilder: (context, index) {
-                                              final activity = _filteredActivities[index];
-                                              return _buildActivityCard(activity);
-                                            },
-                                          ),
-                                  ],
+                                  child: CircularProgressIndicator(
+                                    color: AppColors.terraCotta,
+                                  ),
                                 ),
-                        ],
-                      ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildStatsSummary(),
+                                  const SizedBox(height: 24),
+                                  _buildFilteredActivitiesSection(),
+                                ],
+                              ),
+                      ],
                     ),
+            ),
     );
   }
+
+  Widget _buildPupilSelector() {
+    return DropdownButtonFormField<Pupil>(
+      initialValue: _selectedPupil,
+      decoration: const InputDecoration(
+        labelText: 'Seleziona Pupillo',
+        prefixIcon: Icon(Icons.person_outline, color: AppColors.blueGrey),
+      ),
+      items: _pupils!.map((pupil) {
+        return DropdownMenuItem<Pupil>(value: pupil, child: Text(pupil.name));
+      }).toList(),
+      onChanged: (value) {
+        if (value != null) {
+          setState(() {
+            _selectedPupil = value;
+            _loadActivitiesForSelectedPupil();
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildFilteredActivitiesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Attività nel periodo',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                color: AppColors.darkGreen,
+                size: 20,
+              ),
+              tooltip: _sortAscending
+                  ? 'Ordina per: Meno recenti prima'
+                  : 'Ordina per: Più recenti prima',
+              onPressed: () {
+                setState(() {
+                  _sortAscending = !_sortAscending;
+                  _filterAndCalculate();
+                });
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        _filteredActivities.isEmpty
+            ? _buildEmptyActivitiesState()
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _filteredActivities.length,
+                itemBuilder: (context, index) {
+                  final activity = _filteredActivities[index];
+                  return _buildActivityCard(activity);
+                },
+              ),
+      ],
+    );
+  }
+
   Widget _buildPeriodSelector() {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.beige.withValues(alpha:0.3),
+        color: AppColors.beige.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.beige),
       ),
@@ -443,6 +513,7 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
+
   Widget _buildFilterControls(BuildContext context) {
     if (_selectedPeriod == 'Giorno') {
       final formattedDay =
@@ -462,15 +533,25 @@ class _StatsPageState extends State<StatsPage> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, color: AppColors.blueGrey),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppColors.blueGrey,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     formattedDay,
-                    style: const TextStyle(fontSize: 16, color: AppColors.darkGreen, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: AppColors.darkGreen,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
-              const Icon(Icons.edit_calendar_outlined, color: AppColors.blueGrey),
+              const Icon(
+                Icons.edit_calendar_outlined,
+                color: AppColors.blueGrey,
+              ),
             ],
           ),
         ),
@@ -483,9 +564,7 @@ class _StatsPageState extends State<StatsPage> {
             flex: 2,
             child: DropdownButtonFormField<int>(
               initialValue: _selectedMonth,
-              decoration: const InputDecoration(
-                labelText: 'Mese',
-              ),
+              decoration: const InputDecoration(labelText: 'Mese'),
               items: List.generate(12, (index) {
                 return DropdownMenuItem<int>(
                   value: index + 1,
@@ -507,9 +586,7 @@ class _StatsPageState extends State<StatsPage> {
           Expanded(
             child: DropdownButtonFormField<int>(
               initialValue: _selectedYear,
-              decoration: const InputDecoration(
-                labelText: 'Anno',
-              ),
+              decoration: const InputDecoration(labelText: 'Anno'),
               items: _years.map((year) {
                 return DropdownMenuItem<int>(
                   value: year,
@@ -534,7 +611,10 @@ class _StatsPageState extends State<StatsPage> {
         initialValue: _selectedYear,
         decoration: const InputDecoration(
           labelText: 'Anno',
-          prefixIcon: Icon(Icons.calendar_month_outlined, color: AppColors.blueGrey),
+          prefixIcon: Icon(
+            Icons.calendar_month_outlined,
+            color: AppColors.blueGrey,
+          ),
         ),
         items: _years.map((year) {
           return DropdownMenuItem<int>(
@@ -553,6 +633,7 @@ class _StatsPageState extends State<StatsPage> {
       );
     }
   }
+
   Widget _buildStatsSummary() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -560,7 +641,9 @@ class _StatsPageState extends State<StatsPage> {
         // Ore Totali Lavorate
         Card(
           color: AppColors.darkGreen,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           elevation: 0,
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -634,6 +717,7 @@ class _StatsPageState extends State<StatsPage> {
       ],
     );
   }
+
   Widget _buildStatCard({
     required IconData icon,
     required String title,
@@ -660,14 +744,21 @@ class _StatsPageState extends State<StatsPage> {
                 Icon(icon, color: color, size: 24),
                 if (subtitle != null)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
                       subtitle,
-                      style: TextStyle(fontSize: 8, color: color, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: color,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
               ],
@@ -677,12 +768,20 @@ class _StatsPageState extends State<StatsPage> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: AppColors.blueGrey, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.blueGrey,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
                 ),
               ],
             ),
@@ -691,6 +790,7 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
+
   Widget _buildMailCard() {
     return Card(
       color: Colors.white,
@@ -705,22 +805,38 @@ class _StatsPageState extends State<StatsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Icon(Icons.email_outlined, color: AppColors.darkGreen, size: 24),
+            const Icon(
+              Icons.email_outlined,
+              color: AppColors.darkGreen,
+              size: 24,
+            ),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   'Email / Lettere',
-                  style: TextStyle(fontSize: 12, color: AppColors.blueGrey, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.blueGrey,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '${_mailHours.toStringAsFixed(1)} ore',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
                 ),
                 Text(
                   '${_totalStamps.toStringAsFixed(2)} CHF francobolli',
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.terraCotta),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.terraCotta,
+                  ),
                 ),
               ],
             ),
@@ -729,6 +845,7 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
+
   Widget _buildActivityCard(Activity activity) {
     IconData iconData;
     switch (activity.type) {
@@ -792,21 +909,32 @@ class _StatsPageState extends State<StatsPage> {
                       children: [
                         Text(
                           activity.typeLabel,
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontSize: 14),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkGreen,
+                            fontSize: 14,
+                          ),
                         ),
                         Text(
                           formattedDate,
-                          style: const TextStyle(fontSize: 11, color: AppColors.blueGrey),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.blueGrey,
+                          ),
                         ),
                       ],
                     ),
-                    if (activity.description != null && activity.description!.isNotEmpty) ...[
+                    if (activity.description != null &&
+                        activity.description!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         activity.description!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 13, color: AppColors.darkGreen),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.darkGreen,
+                        ),
                       ),
                     ],
                     const SizedBox(height: 6),
@@ -814,11 +942,20 @@ class _StatsPageState extends State<StatsPage> {
                       spacing: 8,
                       children: [
                         if (activity.duration != null)
-                          _buildBadge(Icons.access_time, '${activity.duration!.toStringAsFixed(1)} h'),
+                          _buildBadge(
+                            Icons.access_time,
+                            '${activity.duration!.toStringAsFixed(1)} h',
+                          ),
                         if (activity.kilometers != null)
-                          _buildBadge(Icons.map_outlined, '${activity.kilometers!.toStringAsFixed(1)} km'),
+                          _buildBadge(
+                            Icons.map_outlined,
+                            '${activity.kilometers!.toStringAsFixed(1)} km',
+                          ),
                         if (activity.stamp != null)
-                          _buildBadge(Icons.local_post_office_outlined, '${activity.stamp!.toStringAsFixed(2)} CHF'),
+                          _buildBadge(
+                            Icons.local_post_office_outlined,
+                            '${activity.stamp!.toStringAsFixed(2)} CHF',
+                          ),
                       ],
                     ),
                   ],
@@ -830,6 +967,7 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
+
   Widget _buildBadge(IconData icon, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -843,11 +981,19 @@ class _StatsPageState extends State<StatsPage> {
         children: [
           Icon(icon, size: 10, color: AppColors.blueGrey),
           const SizedBox(width: 3),
-          Text(text, style: const TextStyle(fontSize: 9, color: AppColors.blueGrey, fontWeight: FontWeight.bold)),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 9,
+              color: AppColors.blueGrey,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
+
   Widget _buildNoPupilsState() {
     return const Center(
       child: Padding(
@@ -855,11 +1001,19 @@ class _StatsPageState extends State<StatsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off_outlined, size: 64, color: AppColors.blueGrey),
+            Icon(
+              Icons.person_off_outlined,
+              size: 64,
+              color: AppColors.blueGrey,
+            ),
             SizedBox(height: 16),
             Text(
               'Nessun pupillo disponibile',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
             ),
             SizedBox(height: 8),
             Text(
@@ -872,6 +1026,7 @@ class _StatsPageState extends State<StatsPage> {
       ),
     );
   }
+
   Widget _buildEmptyActivitiesState() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -886,7 +1041,11 @@ class _StatsPageState extends State<StatsPage> {
           SizedBox(height: 12),
           Text(
             'Nessuna attività in questo periodo',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkGreen,
+              fontSize: 14,
+            ),
           ),
           SizedBox(height: 4),
           Text(

@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
                 ],
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 500),
+                constraints: const BoxConstraints(maxWidth: 1050),
                 child: appWidget,
               ),
             ),

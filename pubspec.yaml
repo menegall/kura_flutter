@@ -37,6 +37,7 @@ dependencies:
 
   supabase_flutter: ^2.0.0
   printing: ^5.15.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
