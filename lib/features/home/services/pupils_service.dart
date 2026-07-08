@@ -1,10 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
+
 class PupilsService {
   final SupabaseClient _supabase = Supabase.instance.client;
-  
-  // Recupera tutti i pupilli dell'utente loggato, con le relative attività associate per sommare le ore 
+
+  // Recupera tutti i pupilli dell'utente loggato, con le relative attività associate per sommare le ore
   Future<List<Pupil>> getPupils() async {
     final currentUser = _supabase.auth.currentUser;
     if (currentUser == null) throw Exception('Utente non autenticato');
@@ -14,8 +15,11 @@ class PupilsService {
         .eq('user_id', currentUser.id)
         .order('name');
     final list = response as List<dynamic>;
-    return list.map((json) => Pupil.fromJson(json as Map<String, dynamic>)).toList();
+    return list
+        .map((json) => Pupil.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
+
   // Recupera un singolo pupillo con le sue attività associate per i dettagli
   Future<Pupil> getPupilById(String id) async {
     final response = await _supabase
@@ -23,7 +27,7 @@ class PupilsService {
         .select('*, activities(duration, activity_date)')
         .eq('id', id)
         .single();
-    
+
     return Pupil.fromJson(response);
   }
 
@@ -54,7 +58,9 @@ class PupilsService {
         .order('activity_date', ascending: false)
         .order('created_at', ascending: false);
     final list = response as List<dynamic>;
-    return list.map((json) => Activity.fromJson(json as Map<String, dynamic>)).toList();
+    return list
+        .map((json) => Activity.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   // Aggiunge una nuova attività
@@ -66,15 +72,20 @@ class PupilsService {
     String? description,
     double? kilometers,
     double? stamp,
+    double? otherExpenses,
   }) async {
     await _supabase.from('activities').insert({
       'pupil_id': pupilId,
-      'activity_date': activityDate.toIso8601String().substring(0, 10), // Formato YYYY-MM-DD
+      'activity_date': activityDate.toIso8601String().substring(
+        0,
+        10,
+      ), // Formato YYYY-MM-DD
       'type': type,
       'duration': duration,
       'description': description?.isEmpty ?? true ? null : description,
       'kilometers': kilometers,
       'stamp': stamp,
+      'other_expenses': otherExpenses,
     });
   }
 
@@ -87,7 +98,9 @@ class PupilsService {
         .from('pupils')
         .select('id')
         .eq('user_id', currentUser.id);
-    final pupilIds = (pupilsResponse as List<dynamic>).map((p) => p['id'] as String).toList();
+    final pupilIds = (pupilsResponse as List<dynamic>)
+        .map((p) => p['id'] as String)
+        .toList();
     if (pupilIds.isEmpty) return [];
     final currentYear = DateTime.now().year;
     final firstDayOfYear = '$currentYear-01-01';
@@ -100,7 +113,9 @@ class PupilsService {
         .lte('activity_date', lastDayOfYear)
         .order('activity_date', ascending: false);
     final list = response as List<dynamic>;
-    return list.map((json) => Activity.fromJson(json as Map<String, dynamic>)).toList();
+    return list
+        .map((json) => Activity.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   // Elimina un pupillo dal database
@@ -116,11 +131,14 @@ class PupilsService {
     required double tarif,
     required double kmTarif,
   }) async {
-    await _supabase.from('pupils').update({
-      'name': name,
-      'max_hours': maxHours,
-      'tarif': tarif,
-      'km_tarif': kmTarif,
-    }).eq('id', id);
+    await _supabase
+        .from('pupils')
+        .update({
+          'name': name,
+          'max_hours': maxHours,
+          'tarif': tarif,
+          'km_tarif': kmTarif,
+        })
+        .eq('id', id);
   }
 }

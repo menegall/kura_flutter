@@ -18,6 +18,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
   final _kilometersController = TextEditingController();
   final _stampController = TextEditingController();
   final _pupilsService = PupilsService();
+  final _otherExpensesController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   String _selectedType = 'call';
   bool _isLoading = false;
@@ -88,6 +89,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
           _selectedType == 'mail' && _stampController.text.isNotEmpty
           ? double.tryParse(_stampController.text.trim())
           : null;
+      final double? otherExpenses = _otherExpensesController.text.isNotEmpty
+          ? double.tryParse(_otherExpensesController.text.trim())
+          : null;
       await _pupilsService.addActivity(
         pupilId: widget.pupil.id,
         activityDate: _selectedDate,
@@ -96,6 +100,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         description: _descriptionController.text.trim(),
         kilometers: kilometers,
         stamp: stamp,
+        otherExpenses: otherExpenses,
       );
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -344,6 +349,27 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   ),
                   const SizedBox(height: 20),
                 ],
+
+                // 4. Campo Altre Spese (opzionale per qualsiasi attività)
+                TextFormField(
+                  controller: _otherExpensesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Altre Spese (CHF) - Opzionale',
+                    prefixIcon: Icon(Icons.monetization_on_outlined, color: AppColors.blueGrey),
+                    hintText: 'Es: 15.00',
+                  ),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final parsed = double.tryParse(value);
+                      if (parsed == null || parsed < 0) {
+                        return 'Inserisci un importo valido';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
                 const SizedBox(height: 12),
                 _isLoading
                     ? const Center(

@@ -42,6 +42,7 @@ class _StatsPageState extends State<StatsPage> {
   double _mailHours = 0.0;
   double _totalKm = 0.0;
   double _totalStamps = 0.0;
+  double _totalOtherExpenses = 0.0;
   final List<String> _monthsItalian = [
     'Gennaio',
     'Febbraio',
@@ -143,11 +144,16 @@ class _StatsPageState extends State<StatsPage> {
     double tempMail = 0.0;
     double tempKm = 0.0;
     double tempStamps = 0.0;
+    double tempOtherExpenses = 0.0;
     for (var act in tempFiltered) {
       final duration = act.duration ?? 0.0;
       final kilometers = act.kilometers ?? 0.0;
       final stamp = act.stamp ?? 0.0;
+      final otherExpenses = act.otherExpenses ?? 0.0;
+
       tempTotalHours += duration;
+      tempOtherExpenses += otherExpenses;
+
       switch (act.type) {
         case 'call':
           tempCall += duration;
@@ -186,6 +192,7 @@ class _StatsPageState extends State<StatsPage> {
       _mailHours = tempMail;
       _totalKm = tempKm;
       _totalStamps = tempStamps;
+      _totalOtherExpenses = tempOtherExpenses;
     });
   }
 
@@ -959,6 +966,11 @@ class _StatsPageState extends State<StatsPage> {
                           _buildBadge(
                             Icons.local_post_office_outlined,
                             '${activity.stamp!.toStringAsFixed(2)} CHF',
+                          ),
+                        if (activity.otherExpenses != null)
+                          _buildBadge(
+                            Icons.monetization_on_outlined,
+                            'Spese: ${activity.otherExpenses!.toStringAsFixed(2)} CHF',
                           ),
                       ],
                     ),

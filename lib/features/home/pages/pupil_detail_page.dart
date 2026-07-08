@@ -417,6 +417,11 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                     Icons.local_post_office_outlined,
                     '${activity.stamp!.toStringAsFixed(2)} CHF',
                   ),
+                if (activity.otherExpenses != null)
+                  _buildBadge(
+                    Icons.monetization_on_outlined,
+                    'Spese: ${activity.otherExpenses!.toStringAsFixed(2)} CHF',
+                  ),
               ],
             ),
           ],

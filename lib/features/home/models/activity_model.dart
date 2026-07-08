@@ -8,6 +8,8 @@ class Activity {
   final String type;
   final double? stamp;
   final DateTime createdAt;
+  final double? otherExpenses;
+
   Activity({
     required this.id,
     required this.pupilId,
@@ -17,6 +19,7 @@ class Activity {
     this.kilometers,
     required this.type,
     this.stamp,
+    this.otherExpenses,
     required this.createdAt,
   });
   factory Activity.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,7 @@ class Activity {
       kilometers: (json['kilometers'] as num?)?.toDouble(),
       type: json['type'] as String,
       stamp: (json['stamp'] as num?)?.toDouble(),
+      otherExpenses: (json['other_expenses'] as num?)?.toDouble(),
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }

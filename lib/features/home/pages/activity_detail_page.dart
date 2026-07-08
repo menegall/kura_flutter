@@ -132,6 +132,15 @@ class ActivityDetailPage extends StatelessWidget {
                           '${activity.stamp!.toStringAsFixed(2)} CHF',
                         ),
                       ],
+                      // Altre Spese - se presenti
+                      if (activity.otherExpenses != null) ...[
+                        const Divider(height: 24, color: AppColors.beige),
+                        _buildDetailRow(
+                          Icons.monetization_on_outlined,
+                          'Altre spese',
+                          '${activity.otherExpenses!.toStringAsFixed(2)} CHF',
+                        ),
+                      ],
                     ],
                   ),
                 ),
