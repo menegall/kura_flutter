@@ -141,4 +141,44 @@ class PupilsService {
         })
         .eq('id', id);
   }
+
+  // Elimina un'attività dal database
+  Future<void> deleteActivity(String id) async {
+    await _supabase.from('activities').delete().eq('id', id);
+  }
+
+  // Aggiorna un'attività esistente nel database
+  Future<void> updateActivity({
+    required String id,
+    required DateTime activityDate,
+    required String type,
+    double? duration,
+    String? description,
+    double? kilometers,
+    double? stamp,
+    double? otherExpenses,
+  }) async {
+    await _supabase
+        .from('activities')
+        .update({
+          'activity_date': activityDate.toIso8601String().substring(0, 10),
+          'type': type,
+          'duration': duration,
+          'description': description?.isEmpty ?? true ? null : description,
+          'kilometers': kilometers,
+          'stamp': stamp,
+          'other_expenses': otherExpenses,
+        })
+        .eq('id', id);
+  }
+
+  // Recupera una singola attività per ID
+  Future<Activity> getActivityById(String id) async {
+    final response = await _supabase
+        .from('activities')
+        .select('*')
+        .eq('id', id)
+        .single();
+    return Activity.fromJson(response);
+  }
 }

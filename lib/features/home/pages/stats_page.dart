@@ -891,8 +891,8 @@ class _StatsPageState extends State<StatsPage> {
       elevation: 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          Navigator.of(context).push(
+        onTap: () async {
+          final result = await Navigator.of(context).push<bool>(
             MaterialPageRoute(
               builder: (context) => ActivityDetailPage(
                 activity: activity,
@@ -900,6 +900,9 @@ class _StatsPageState extends State<StatsPage> {
               ),
             ),
           );
+          if (result == true) {
+            _loadActivitiesForSelectedPupil();
+          }
         },
         child: Padding(
           padding: const EdgeInsets.all(12.0),

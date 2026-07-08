@@ -6,6 +6,7 @@ import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
 import 'add_activity_page.dart';
 import 'edit_pupil_page.dart';
+import 'activity_detail_page.dart';
 
 class PupilDetailPage extends StatefulWidget {
   final Pupil pupil;
@@ -366,6 +367,19 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
       ),
       elevation: 0,
       child: ListTile(
+        onTap: () async {
+          final result = await Navigator.of(context).push<bool>(
+            MaterialPageRoute(
+              builder: (context) => ActivityDetailPage(
+                activity: activity,
+                pupilName: _pupil.name,
+              ),
+            ),
+          );
+          if (result == true) {
+            _loadData();
+          }
+        },
         leading: CircleAvatar(
           backgroundColor: AppColors.beige.withValues(alpha: 0.5),
           foregroundColor: AppColors.darkGreen,
