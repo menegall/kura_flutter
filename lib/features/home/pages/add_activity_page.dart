@@ -13,7 +13,8 @@ class AddActivityPage extends StatefulWidget {
 class _AddActivityPageState extends State<AddActivityPage> {
   final _formKey = GlobalKey<FormState>();
   final _descriptionController = TextEditingController();
-  final _durationController = TextEditingController();
+  final _hoursController = TextEditingController();
+  final _minutesController = TextEditingController();
   final _kilometersController = TextEditingController();
   final _stampController = TextEditingController();
   final _pupilsService = PupilsService();
@@ -59,9 +60,26 @@ class _AddActivityPageState extends State<AddActivityPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final double? duration = _durationController.text.isNotEmpty
-          ? double.tryParse(_durationController.text.trim())
-          : null;
+      final hoursText = _hoursController.text.trim();
+      final minutesText = _minutesController.text.trim();
+      final int hours = hoursText.isNotEmpty
+          ? (int.tryParse(hoursText) ?? 0)
+          : 0;
+      final int minutes = minutesText.isNotEmpty
+          ? (int.tryParse(minutesText) ?? 0)
+          : 0;
+      if (hours == 0 && minutes == 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Inserisci la durata dell\'attività (ore o minuti).'),
+            backgroundColor: AppColors.terraCotta,
+          ),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+      final double duration = hours + (minutes / 60.0);
+
       final double? kilometers =
           _selectedType == 'transfert' && _kilometersController.text.isNotEmpty
           ? double.tryParse(_kilometersController.text.trim())
@@ -210,30 +228,62 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
                 const SizedBox(height: 20),
                 // Campi Condizionali
-                // 1. Campo Tempo (per tutte le attività)
+                // 1. Campo Tempo
                 if (_selectedType != 'transfert') ...[
-                  TextFormField(
-                    controller: _durationController,
-                    decoration: const InputDecoration(
-                      labelText: 'Tempo impiegato (Ore)',
-                      prefixIcon: Icon(
-                        Icons.access_time,
-                        color: AppColors.blueGrey,
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 4,
+                        child: TextFormField(
+                          controller: _hoursController,
+                          decoration: const InputDecoration(
+                            labelText: 'Ore impiegate',
+                            prefixIcon: Icon(
+                              Icons.access_time,
+                              color: AppColors.blueGrey,
+                            ),
+                            hintText: 'Es: 2',
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              final parsed = int.tryParse(value);
+                              if (parsed == null || parsed < 0) {
+                                return 'Non valido';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
                       ),
-                      hintText: 'Es: 1.5',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      if (value != null && value.isNotEmpty) {
-                        final parsed = double.tryParse(value);
-                        if (parsed == null || parsed <= 0) {
-                          return 'Inserisci un numero valido di ore';
-                        }
-                      }
-                      return null;
-                    },
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 5,
+                        child: TextFormField(
+                          controller: _minutesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Minuti impiegati',
+                            prefixIcon: Icon(
+                              Icons.timer_outlined,
+                              color: AppColors.blueGrey,
+                            ),
+                            hintText: 'Es: 15',
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) {
+                            if (value != null && value.isNotEmpty) {
+                              final parsed = int.tryParse(value);
+                              if (parsed == null ||
+                                  parsed < 0 ||
+                                  parsed >= 60) {
+                                return 'Inserisci tra 0 e 59';
+                              }
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 20),

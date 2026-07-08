@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../models/activity_model.dart';
+
 class ActivityDetailPage extends StatelessWidget {
   final Activity activity;
   final String pupilName;
@@ -102,14 +104,14 @@ class ActivityDetailPage extends StatelessWidget {
                         'Data prestazione',
                         formattedDate,
                       ),
-                      
+
                       // Durata (Tempo) - se presente
                       if (activity.duration != null) ...[
                         const Divider(height: 24, color: AppColors.beige),
                         _buildDetailRow(
                           Icons.access_time,
                           'Tempo impiegato',
-                          '${activity.duration!.toStringAsFixed(1)} ore',
+                          formatDuration(activity.duration!),
                         ),
                       ],
                       // Kilometri - se presenti
@@ -153,16 +155,21 @@ class ActivityDetailPage extends StatelessWidget {
                   border: Border.all(color: AppColors.beige, width: 1),
                 ),
                 child: Text(
-                  (activity.description != null && activity.description!.trim().isNotEmpty)
+                  (activity.description != null &&
+                          activity.description!.trim().isNotEmpty)
                       ? activity.description!
                       : 'Nessuna descrizione o nota inserita per questa attività.',
                   style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
-                    color: (activity.description != null && activity.description!.trim().isNotEmpty)
+                    color:
+                        (activity.description != null &&
+                            activity.description!.trim().isNotEmpty)
                         ? AppColors.darkGreen
                         : AppColors.blueGrey.withValues(alpha: 0.8),
-                    fontStyle: (activity.description != null && activity.description!.trim().isNotEmpty)
+                    fontStyle:
+                        (activity.description != null &&
+                            activity.description!.trim().isNotEmpty)
                         ? FontStyle.normal
                         : FontStyle.italic,
                   ),
@@ -174,6 +181,7 @@ class ActivityDetailPage extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildDetailRow(IconData icon, String label, String value) {
     return Row(
       children: [

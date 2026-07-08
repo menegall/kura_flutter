@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
@@ -216,7 +217,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                   style: TextStyle(color: AppColors.blueGrey),
                 ),
                 Text(
-                  '${_pupil.workedHours.toStringAsFixed(1)} / ${_pupil.maxHours.toStringAsFixed(1)} h',
+                  '${formatDuration(_pupil.workedHours)} / ${formatDuration(_pupil.maxHours)}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -239,7 +240,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
             Text(
               rawPercent >= 1.0
                   ? 'Ore esaurite!'
-                  : '${remainingHours.toStringAsFixed(1)} ore rimanenti',
+                  : '${formatDuration(remainingHours)} rimanenti',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
@@ -404,7 +405,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                 if (activity.duration != null)
                   _buildBadge(
                     Icons.access_time,
-                    '${activity.duration!.toStringAsFixed(1)} ore',
+                    formatDuration(activity.duration!),
                   ),
                 if (activity.kilometers != null)
                   _buildBadge(

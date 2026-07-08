@@ -2,6 +2,19 @@ import { serve } from "std/server"
 import { createClient } from "@supabase/supabase-js"
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib"
 
+
+function formatDuration(hours: number): string {
+  const h = Math.floor(hours)
+  const m = Math.round((hours - h) * 60)
+  if (h === 0) {
+    return `${m} minuti`
+  } else if (m === 0) {
+    return `${h}h`
+  } else {
+    return `${h}h e ${m} minuti`
+  }
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -148,8 +161,8 @@ serve(async (req) => {
     boxY -= 20
     // Ore
     page.drawText(`Ore totali svolte:`, { x: 55, y: boxY, size: 10, font })
-    page.drawText(`${workedHours.toFixed(1)} h`, { x: 180, y: boxY, size: 10, font: boldFont })
-    page.drawText(`${workedHours.toFixed(1)} h x ${hourlyRate.toFixed(2)} CHF =`, { x: 260, y: boxY, size: 10, font })
+    page.drawText(formatDuration(workedHours), { x: 180, y: boxY, size: 10, font: boldFont })
+    page.drawText(`${formatDuration(workedHours)} x ${hourlyRate.toFixed(2)} CHF =`, { x: 275, y: boxY, size: 10, font })
     page.drawText(`${hoursCost.toFixed(2)} CHF`, { x: 440, y: boxY, size: 10, font: boldFont, color: rgb(0.29, 0.35, 0.25) })
     boxY -= 18
     // Km
@@ -183,7 +196,7 @@ serve(async (req) => {
 
     for (const [key, label] of Object.entries(catLabels)) {
       const hrs = categoryHours[key] || 0.0
-      page.drawText(`• ${label}: ${hrs.toFixed(1)} h`, { x: 50, y, size: 9, font })
+      page.drawText(`• ${label}: ${formatDuration(hrs)}`, { x: 50, y, size: 9, font })
       y -= 15
     }
     y -= 20
@@ -223,7 +236,7 @@ serve(async (req) => {
       const typeLabel = typeLabels[act.type] || act.type
       // Dettagli dinamici
       const detailsList = []
-      if (act.duration != null) detailsList.push(`${Number(act.duration).toFixed(1)} h`)
+      if (act.duration != null) detailsList.push(formatDuration(Number(act.duration)))
       if (act.kilometers != null) detailsList.push(`${Number(act.kilometers).toFixed(1)} km`)
       if (act.stamp != null) detailsList.push(`${Number(act.stamp).toFixed(2)} CHF`)
       const detailsStr = detailsList.join(" | ")

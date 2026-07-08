@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../../../core/constant.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
@@ -658,12 +659,15 @@ class _StatsPageState extends State<StatsPage> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  '${_totalHours.toStringAsFixed(1)} h',
-                  style: const TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    formatDuration(_totalHours),
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -683,7 +687,7 @@ class _StatsPageState extends State<StatsPage> {
             _buildStatCard(
               icon: Icons.phone_outlined,
               title: 'Telefonate',
-              value: '${_callHours.toStringAsFixed(1)} ore',
+              value: formatDuration(_callHours),
               color: AppColors.darkGreen,
             ),
             _buildStatCard(
@@ -697,19 +701,19 @@ class _StatsPageState extends State<StatsPage> {
             _buildStatCard(
               icon: Icons.person_search_outlined,
               title: 'Incontri Pupillo',
-              value: '${_meetingPupilsHours.toStringAsFixed(1)} ore',
+              value: formatDuration(_meetingPupilsHours),
               color: AppColors.blueGrey,
             ),
             _buildStatCard(
               icon: Icons.groups_outlined,
               title: 'Incontri Varie',
-              value: '${_meetingVariousHours.toStringAsFixed(1)} ore',
+              value: formatDuration(_meetingVariousHours),
               color: AppColors.blueGrey,
             ),
             _buildStatCard(
               icon: Icons.work_outline,
               title: 'Altro',
-              value: '${_otherHours.toStringAsFixed(1)} ore',
+              value: formatDuration(_otherHours),
               color: AppColors.blueGrey,
             ),
           ],
@@ -823,7 +827,7 @@ class _StatsPageState extends State<StatsPage> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${_mailHours.toStringAsFixed(1)} ore',
+                  formatDuration(_mailHours),
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
@@ -944,7 +948,7 @@ class _StatsPageState extends State<StatsPage> {
                         if (activity.duration != null)
                           _buildBadge(
                             Icons.access_time,
-                            '${activity.duration!.toStringAsFixed(1)} h',
+                            formatDuration(activity.duration!),
                           ),
                         if (activity.kilometers != null)
                           _buildBadge(
