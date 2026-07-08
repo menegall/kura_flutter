@@ -234,94 +234,90 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 const SizedBox(height: 20),
                 // Campi Condizionali
                 // 1. Campo Tempo
-                if (_selectedType != 'transfert') ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 4,
-                        child: TextFormField(
-                          controller: _hoursController,
-                          decoration: const InputDecoration(
-                            labelText: 'Ore impiegate',
-                            prefixIcon: Icon(
-                              Icons.access_time,
-                              color: AppColors.blueGrey,
-                            ),
-                            hintText: 'Es: 2',
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: TextFormField(
+                        controller: _hoursController,
+                        decoration: const InputDecoration(
+                          labelText: 'Ore impiegate',
+                          prefixIcon: Icon(
+                            Icons.access_time,
+                            color: AppColors.blueGrey,
                           ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final parsed = int.tryParse(value);
-                              if (parsed == null || parsed < 0) {
-                                return 'Non valido';
-                              }
-                            }
-                            return null;
-                          },
+                          hintText: 'Es: 2',
                         ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            final parsed = int.tryParse(value);
+                            if (parsed == null || parsed < 0) {
+                              return 'Non valido';
+                            }
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        flex: 5,
-                        child: TextFormField(
-                          controller: _minutesController,
-                          decoration: const InputDecoration(
-                            labelText: 'Minuti impiegati',
-                            prefixIcon: Icon(
-                              Icons.timer_outlined,
-                              color: AppColors.blueGrey,
-                            ),
-                            hintText: 'Es: 15',
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 5,
+                      child: TextFormField(
+                        controller: _minutesController,
+                        decoration: const InputDecoration(
+                          labelText: 'Minuti impiegati',
+                          prefixIcon: Icon(
+                            Icons.timer_outlined,
+                            color: AppColors.blueGrey,
                           ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value != null && value.isNotEmpty) {
-                              final parsed = int.tryParse(value);
-                              if (parsed == null ||
-                                  parsed < 0 ||
-                                  parsed >= 60) {
-                                return 'Inserisci tra 0 e 59';
-                              }
-                            }
-                            return null;
-                          },
+                          hintText: 'Es: 15',
                         ),
+                        keyboardType: TextInputType.number,
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty) {
+                            final parsed = int.tryParse(value);
+                            if (parsed == null || parsed < 0 || parsed >= 60) {
+                              return 'Inserisci tra 0 e 59';
+                            }
+                          }
+                          return null;
+                        },
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
-                // 2. Campo Km (solo per Trasferta)
-                if (_selectedType == 'transfert') ...[
-                  TextFormField(
-                    controller: _kilometersController,
-                    decoration: const InputDecoration(
-                      labelText: 'Distanza percorsa (Km)',
-                      prefixIcon: Icon(
-                        Icons.map_outlined,
-                        color: AppColors.blueGrey,
-                      ),
-                      hintText: 'Es: 15.5',
+
+                // 2. Campo Km
+                TextFormField(
+                  controller: _kilometersController,
+                  decoration: const InputDecoration(
+                    labelText: 'Distanza percorsa (Km)',
+                    prefixIcon: Icon(
+                      Icons.map_outlined,
+                      color: AppColors.blueGrey,
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      if (_selectedType == 'transfert') {
-                        if (value == null || value.isEmpty) {
-                          return 'Inserisci i km per la trasferta';
-                        }
-                        final parsed = double.tryParse(value);
-                        if (parsed == null || parsed <= 0) {
-                          return 'Inserisci un numero valido di km';
-                        }
-                      }
-                      return null;
-                    },
+                    hintText: 'Es: 15.5',
                   ),
-                  const SizedBox(height: 20),
-                ],
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (_selectedType == 'transfert') {
+                      if (value == null || value.isEmpty) {
+                        return 'Inserisci i km per la trasferta';
+                      }
+                      final parsed = double.tryParse(value);
+                      if (parsed == null || parsed <= 0) {
+                        return 'Inserisci un numero valido di km';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+                
                 // 3. Campo Francobolli (solo per Email/Lettera)
                 if (_selectedType == 'mail') ...[
                   TextFormField(
@@ -355,10 +351,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   controller: _otherExpensesController,
                   decoration: const InputDecoration(
                     labelText: 'Altre Spese (CHF) - Opzionale',
-                    prefixIcon: Icon(Icons.monetization_on_outlined, color: AppColors.blueGrey),
+                    prefixIcon: Icon(
+                      Icons.monetization_on_outlined,
+                      color: AppColors.blueGrey,
+                    ),
                     hintText: 'Es: 15.00',
                   ),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   validator: (value) {
                     if (value != null && value.isNotEmpty) {
                       final parsed = double.tryParse(value);
