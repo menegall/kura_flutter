@@ -228,7 +228,7 @@ class _EditActivityPageState extends State<EditActivityPage> {
                 const SizedBox(height: 20),
                 // Scelta Tipo Attività
                 DropdownButtonFormField<String>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   decoration: const InputDecoration(
                     labelText: 'Tipo di attività',
                     prefixIcon: Icon(

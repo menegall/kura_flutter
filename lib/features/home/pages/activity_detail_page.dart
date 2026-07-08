@@ -214,7 +214,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                         children: [
                           CircleAvatar(
                             radius: 28,
-                            backgroundColor: AppColors.beige.withOpacity(0.5),
+                            backgroundColor: AppColors.beige.withValues(alpha: 0.5),
                             foregroundColor: AppColors.darkGreen,
                             child: Icon(iconData, size: 28),
                           ),
@@ -355,7 +355,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                                 (_activity.description != null &&
                                     _activity.description!.trim().isNotEmpty)
                                 ? AppColors.darkGreen
-                                : AppColors.blueGrey.withOpacity(0.8),
+                                : AppColors.blueGrey.withValues(alpha: 0.8),
                             fontStyle:
                                 (_activity.description != null &&
                                     _activity.description!.trim().isNotEmpty)
