@@ -153,6 +153,7 @@ class _StatsPageState extends State<StatsPage> {
 
       tempTotalHours += duration;
       tempOtherExpenses += otherExpenses;
+      tempKm += kilometers;
 
       switch (act.type) {
         case 'call':
@@ -168,7 +169,7 @@ class _StatsPageState extends State<StatsPage> {
           tempOther += duration;
           break;
         case 'transfert':
-          tempKm += kilometers;
+          // Chilometri calcolati a livello globale per tutte le attività
           break;
         case 'mail':
           tempMail += duration;

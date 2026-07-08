@@ -113,8 +113,7 @@ class _EditActivityPageState extends State<EditActivityPage> {
       if (hours > 0 || minutes > 0) {
         duration = hours + (minutes / 60.0);
       }
-      final double? kilometers =
-          _selectedType == 'transfert' && _kilometersController.text.isNotEmpty
+      final double? kilometers = _kilometersController.text.isNotEmpty
           ? double.tryParse(_kilometersController.text.trim())
           : null;
       final double? stamp =
@@ -323,36 +322,32 @@ class _EditActivityPageState extends State<EditActivityPage> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Campo Km (solo per Trasferta)
-                if (_selectedType == 'transfert') ...[
-                  TextFormField(
-                    controller: _kilometersController,
-                    decoration: const InputDecoration(
-                      labelText: 'Distanza percorsa (Km)',
-                      prefixIcon: Icon(
-                        Icons.map_outlined,
-                        color: AppColors.blueGrey,
-                      ),
-                      hintText: 'Es: 15.5',
+                // Campo Km (opzionale per qualsiasi attività)
+                TextFormField(
+                  controller: _kilometersController,
+                  decoration: const InputDecoration(
+                    labelText: 'Distanza percorsa (Km) - Opzionale',
+                    prefixIcon: Icon(
+                      Icons.map_outlined,
+                      color: AppColors.blueGrey,
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (value) {
-                      if (_selectedType == 'transfert') {
-                        if (value == null || value.isEmpty) {
-                          return 'Inserisci i km per la trasferta';
-                        }
-                        final parsed = double.tryParse(value);
-                        if (parsed == null || parsed <= 0) {
-                          return 'Inserisci un numero valido';
-                        }
-                      }
-                      return null;
-                    },
+                    hintText: 'Es: 15.5',
                   ),
-                  const SizedBox(height: 20),
-                ],
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final parsed = double.tryParse(value);
+                      if (parsed == null || parsed < 0) {
+                        return 'Inserisci un numero valido';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
                 // Campo Francobolli (solo per Email/Lettera)
                 if (_selectedType == 'mail') ...[
                   TextFormField(

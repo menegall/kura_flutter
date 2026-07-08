@@ -81,8 +81,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
       }
       final double duration = hours + (minutes / 60.0);
 
-      final double? kilometers =
-          _selectedType == 'transfert' && _kilometersController.text.isNotEmpty
+      final double? kilometers = _kilometersController.text.isNotEmpty
           ? double.tryParse(_kilometersController.text.trim())
           : null;
       final double? stamp =
@@ -289,11 +288,11 @@ class _AddActivityPageState extends State<AddActivityPage> {
                 ),
                 const SizedBox(height: 20),
 
-                // 2. Campo Km
+                // 2. Campo Km (opzionale per qualsiasi attività)
                 TextFormField(
                   controller: _kilometersController,
                   decoration: const InputDecoration(
-                    labelText: 'Distanza percorsa (Km)',
+                    labelText: 'Distanza percorsa (Km) - Opzionale',
                     prefixIcon: Icon(
                       Icons.map_outlined,
                       color: AppColors.blueGrey,
@@ -304,12 +303,9 @@ class _AddActivityPageState extends State<AddActivityPage> {
                     decimal: true,
                   ),
                   validator: (value) {
-                    if (_selectedType == 'transfert') {
-                      if (value == null || value.isEmpty) {
-                        return 'Inserisci i km per la trasferta';
-                      }
+                    if (value != null && value.isNotEmpty) {
                       final parsed = double.tryParse(value);
-                      if (parsed == null || parsed <= 0) {
+                      if (parsed == null || parsed < 0) {
                         return 'Inserisci un numero valido di km';
                       }
                     }
@@ -317,7 +313,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
                   },
                 ),
                 const SizedBox(height: 20),
-                
+
                 // 3. Campo Francobolli (solo per Email/Lettera)
                 if (_selectedType == 'mail') ...[
                   TextFormField(
