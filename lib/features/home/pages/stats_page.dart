@@ -1,8 +1,12 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:printing/printing.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/constant.dart';
@@ -273,10 +277,19 @@ class _StatsPageState extends State<StatsPage> {
         );
       }
       final pdfBytes = response.bodyBytes;
-      await Printing.layoutPdf(
-        onLayout: (format) async => pdfBytes,
-        name: 'statistiche_${_selectedPupil!.name.replaceAll(' ', '_')}.pdf',
-      );
+      if (kIsWeb) {
+        await Printing.layoutPdf(
+          onLayout: (format) async => pdfBytes,
+          name: 'statistiche_${_selectedPupil!.name.replaceAll(' ', '_')}.pdf',
+        );
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final fileName =
+            'statistiche_${_selectedPupil!.name.replaceAll(' ', '_')}.pdf';
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(pdfBytes);
+        await OpenFilex.open(file.path);
+      }
     } catch (e) {
       if (mounted) {
         // Chiudi il caricamento se ancora attivo (il dialog è visualizzato prima della chiamata)

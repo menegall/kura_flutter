@@ -1,7 +1,8 @@
 import { serve } from "std/server";
 import { createClient } from "@supabase/supabase-js";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { PDFDocument, rgb, StandardFonts, PDFFont } from "pdf-lib";
 
+// Helper function to format duration
 function formatDuration(hours: number): string {
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
@@ -14,16 +15,44 @@ function formatDuration(hours: number): string {
   }
 }
 
+// Helper function to wrap text based on a maximum width
+function splitTextIntoLines(
+  text: string,
+  font: PDFFont,
+  fontSize: number,
+  maxWidth: number,
+): string[] {
+  if (!text) return [""];
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = font.widthOfTextAtSize(currentLine + " " + word, fontSize);
+    if (width < maxWidth) {
+      currentLine += " " + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
+
 serve(async (req) => {
-  // Gestione preflight OPTIONS per CORS
+  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
+
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -35,17 +64,20 @@ serve(async (req) => {
         },
       );
     }
-    // Inizializza il client Supabase con il JWT dell'utente per rispettare RLS
+
+    // Initialize Supabase client using user JWT to respect RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
     });
-    // Recupera l'utente per avere il suo nome
+
+    // Fetch user to get their name
     const {
       data: { user },
       error: userError,
     } = await supabase.auth.getUser();
+
     if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "Token non valido o utente non trovato" }),
@@ -55,8 +87,10 @@ serve(async (req) => {
         },
       );
     }
+
     const curatoreName = user.user_metadata?.name ?? "Curatore";
-    // Leggi i parametri della richiesta
+
+    // Parse request payload
     const { pupil_id, period_type, year, month, day } = await req.json();
     if (!pupil_id || !period_type || !year) {
       return new Response(
@@ -70,12 +104,14 @@ serve(async (req) => {
         },
       );
     }
-    // 1. Recupera i dettagli del pupillo
+
+    // 1. Fetch pupil details
     const { data: pupil, error: pupilError } = await supabase
       .from("pupils")
       .select("*")
       .eq("id", pupil_id)
       .single();
+
     if (pupilError || !pupil) {
       return new Response(
         JSON.stringify({ error: "Pupillo non trovato o accesso negato" }),
@@ -85,12 +121,15 @@ serve(async (req) => {
         },
       );
     }
-    // 2. Costruisci il filtro per la data ed esegui la query delle attività
+
+    // 2. Build date filters and query activities
     let query = supabase
       .from("activities")
       .select("*")
       .eq("pupil_id", pupil_id);
+
     let periodLabel = "";
+
     if (period_type === "Giorno") {
       const formattedDay = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       query = query.eq("activity_date", formattedDay);
@@ -102,6 +141,7 @@ serve(async (req) => {
       query = query
         .gte("activity_date", startOfMonth)
         .lte("activity_date", endOfMonth);
+
       const monthsItalian = [
         "Gennaio",
         "Febbraio",
@@ -123,10 +163,12 @@ serve(async (req) => {
         .lte("activity_date", `${year}-12-31`);
       periodLabel = `Anno ${year}`;
     }
+
     const { data: activities, error: activitiesError } = await query.order(
       "activity_date",
       { ascending: true },
     );
+
     if (activitiesError) {
       return new Response(
         JSON.stringify({ error: "Errore nel recupero delle attività" }),
@@ -136,19 +178,13 @@ serve(async (req) => {
         },
       );
     }
-    // 3. Esegui i conteggi e i calcoli finanziari
+
+    // 3. Financial calculations
     let workedHours = 0.0;
     let totalKm = 0.0;
     let totalStamps = 0.0;
     let totalOtherExpenses = 0.0;
 
-    const categoryHours: Record<string, number> = {
-      call: 0.0,
-      meeting_various: 0.0,
-      meeting_pupils: 0.0,
-      other: 0.0,
-      mail: 0.0,
-    };
     for (const act of activities || []) {
       const duration = Number(act.duration) || 0.0;
       const kilometers = Number(act.kilometers) || 0.0;
@@ -159,39 +195,39 @@ serve(async (req) => {
       if (act.kilometers != null) totalKm += kilometers;
       if (act.stamp != null) totalStamps += stamp;
       if (act.other_expenses != null) totalOtherExpenses += other_expenses;
-      if (act.type in categoryHours) {
-        categoryHours[act.type] += duration;
-      }
     }
+
     const hourlyRate = Number(pupil.tarif) || 0.0;
     const kmRate = Number(pupil.km_tarif) || 0.0;
     const hoursCost = workedHours * hourlyRate;
     const kmCost = totalKm * kmRate;
     const grandTotal = hoursCost + kmCost + totalStamps + totalOtherExpenses;
 
-    // 4. Generazione del file PDF
+    // 4. Generate PDF
     const pdfDoc = await PDFDocument.create();
     let page = pdfDoc.addPage([595.28, 841.89]); // A4
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
     let y = 800;
-    // Intestazione
+
+    // Header
     page.drawText("REPORT PRESTAZIONI E ATTIVITÀ", {
       x: 40,
       y,
       size: 20,
       font: boldFont,
       color: rgb(0.29, 0.35, 0.25),
-    }); // Dark Green
+    });
     y -= 25;
     page.drawLine({
       start: { x: 40, y },
       end: { x: 555, y },
       thickness: 1.5,
       color: rgb(0.9, 0.87, 0.83),
-    }); // Beige
+    });
     y -= 30;
-    // Metadati Curatore e Pupillo
+
+    // Metadata
     page.drawText(`Curatore: ${curatoreName}`, { x: 40, y, size: 11, font });
     page.drawText(`Periodo di riferimento: ${periodLabel}`, {
       x: 300,
@@ -213,7 +249,8 @@ serve(async (req) => {
       font,
     });
     y -= 35;
-    // Tabella Tariffe Applicate
+
+    // Applied Rates Table
     page.drawText("TARIFFE APPLICATE", {
       x: 40,
       y,
@@ -240,16 +277,17 @@ serve(async (req) => {
     const boxHeight = hasOtherExpenses ? 155 : 135;
     const boxOffset = hasOtherExpenses ? 145 : 125;
 
-    // Pannello Riepilogo Finanziario (Box colorato)
+    // Financial Summary Panel
     page.drawRectangle({
       x: 40,
       y: y - boxOffset,
       width: 515,
       height: boxHeight,
-      color: rgb(0.98, 0.98, 0.97), // Off-white
-      borderColor: rgb(0.9, 0.87, 0.83), // Beige
+      color: rgb(0.98, 0.98, 0.97),
+      borderColor: rgb(0.9, 0.87, 0.83),
       borderWidth: 1,
     });
+
     let boxY = y - 20;
     page.drawText("RIEPILOGO COMPLESSIVO", {
       x: 55,
@@ -259,7 +297,8 @@ serve(async (req) => {
       color: rgb(0.29, 0.35, 0.25),
     });
     boxY -= 20;
-    // Ore
+
+    // Hours
     page.drawText(`Ore totali svolte:`, { x: 55, y: boxY, size: 10, font });
     page.drawText(formatDuration(workedHours), {
       x: 180,
@@ -279,7 +318,8 @@ serve(async (req) => {
       color: rgb(0.29, 0.35, 0.25),
     });
     boxY -= 18;
-    // Km
+
+    // Kilometers
     page.drawText(`Distanza percorsa:`, { x: 55, y: boxY, size: 10, font });
     page.drawText(`${totalKm.toFixed(1)} km`, {
       x: 180,
@@ -301,7 +341,8 @@ serve(async (req) => {
       color: rgb(0.29, 0.35, 0.25),
     });
     boxY -= 18;
-    // Spese francobolli
+
+    // Stamps
     page.drawText(`Spese francobolli (mail):`, {
       x: 55,
       y: boxY,
@@ -314,10 +355,10 @@ serve(async (req) => {
       size: 10,
       font: boldFont,
       color: rgb(0.76, 0.43, 0.31),
-    }); // Terra Cotta
+    });
     boxY -= 18;
 
-    // Altre spese
+    // Other expenses
     if (hasOtherExpenses) {
       page.drawText(`Altre spese rimborsabili:`, {
         x: 55,
@@ -331,12 +372,12 @@ serve(async (req) => {
         size: 10,
         font: boldFont,
         color: rgb(0.76, 0.43, 0.31),
-      }); // Terra Cotta
+      });
       boxY -= 18;
     }
-    boxY -= 4; // Spazio aggiuntivo prima della riga
+    boxY -= 4;
 
-    // Linea divisoria box
+    // Separator line
     page.drawLine({
       start: { x: 55, y: boxY },
       end: { x: 540, y: boxY },
@@ -344,7 +385,8 @@ serve(async (req) => {
       color: rgb(0.9, 0.87, 0.83),
     });
     boxY -= 18;
-    // Totale Complessivo
+
+    // Grand Total
     page.drawText("TOTALE DA FATTURARE:", {
       x: 55,
       y: boxY,
@@ -358,38 +400,11 @@ serve(async (req) => {
       size: 12,
       font: boldFont,
       color: rgb(0.76, 0.43, 0.31),
-    }); // Terra Cotta
-
-    y -= boxOffset + 25;
-    // Tabella Riepilogo Categorie
-    page.drawText("RESOCONTO ORE PER CATEGORIA", {
-      x: 40,
-      y,
-      size: 11,
-      font: boldFont,
-      color: rgb(0.29, 0.35, 0.25),
     });
-    y -= 18;
-    const catLabels = {
-      call: "Telefonate",
-      meeting_pupils: "Incontri con Pupillo",
-      meeting_various: "Incontri Varie",
-      mail: "Email / Lettere",
-      other: "Altro",
-    };
 
-    for (const [key, label] of Object.entries(catLabels)) {
-      const hrs = categoryHours[key] || 0.0;
-      page.drawText(`• ${label}: ${formatDuration(hrs)}`, {
-        x: 50,
-        y,
-        size: 9,
-        font,
-      });
-      y -= 15;
-    }
-    y -= 20;
-    // Elenco Dettagliato Attività
+    y -= boxOffset + 45;
+
+    // Activities List Title
     page.drawText("DETTAGLIO PRESTAZIONI EFFETTUATE", {
       x: 40,
       y,
@@ -398,7 +413,8 @@ serve(async (req) => {
       color: rgb(0.29, 0.35, 0.25),
     });
     y -= 20;
-    // Disegna intestazione tabella prestazioni
+
+    // Table header layout with new structured columns
     page.drawRectangle({
       x: 40,
       y: y - 5,
@@ -408,33 +424,49 @@ serve(async (req) => {
     });
     page.drawText("Data", {
       x: 45,
-      y: y,
+      y,
       size: 9,
       font: boldFont,
       color: rgb(0.29, 0.35, 0.25),
     });
     page.drawText("Tipo Attività", {
-      x: 105,
-      y: y,
+      x: 95,
+      y,
       size: 9,
       font: boldFont,
       color: rgb(0.29, 0.35, 0.25),
     });
-    page.drawText("Dettagli", {
-      x: 215,
-      y: y,
+    page.drawText("Tempo", {
+      x: 165,
+      y,
+      size: 9,
+      font: boldFont,
+      color: rgb(0.29, 0.35, 0.25),
+    });
+    page.drawText("Km", {
+      x: 225,
+      y,
+      size: 9,
+      font: boldFont,
+      color: rgb(0.29, 0.35, 0.25),
+    });
+    page.drawText("Spese", {
+      x: 265,
+      y,
       size: 9,
       font: boldFont,
       color: rgb(0.29, 0.35, 0.25),
     });
     page.drawText("Descrizione / Note", {
-      x: 335,
-      y: y,
+      x: 365,
+      y,
       size: 9,
       font: boldFont,
       color: rgb(0.29, 0.35, 0.25),
     });
+
     y -= 20;
+
     const typeLabels: Record<string, string> = {
       call: "Telefonata",
       transfert: "Trasferta",
@@ -443,12 +475,53 @@ serve(async (req) => {
       meeting_pupils: "Incontro Pupillo",
       other: "Altro",
     };
+
+    // Table Body loop
     for (const act of activities || []) {
-      // Controlla se la pagina sta per finire e aggiungine una nuova se necessario
-      if (y < 60) {
+      const desc = act.description || "";
+
+      // Define column max widths based on new structural layout spacing
+      const speseMaxWidth = 95; // X goes from 265 to 360
+      const descMaxWidth = 190; // X goes from 365 to 555
+
+      // Prepare multi-line array for Expenses column
+      const speseLines: string[] = [];
+      if (act.stamp != null && Number(act.stamp) > 0) {
+        speseLines.push(`francobolli: ${Number(act.stamp).toFixed(2)} CHF`);
+      }
+      if (act.other_expenses != null && Number(act.other_expenses) > 0) {
+        speseLines.push(`altre: ${Number(act.other_expenses).toFixed(2)} CHF`);
+      }
+      if (speseLines.length === 0) {
+        speseLines.push("-");
+      }
+
+      // Format single-line static text inputs
+      const tempoStr =
+        act.duration != null && Number(act.duration) > 0
+          ? formatDuration(Number(act.duration))
+          : "-";
+      const kmStr =
+        act.kilometers != null && Number(act.kilometers) > 0
+          ? `${Number(act.kilometers).toFixed(1)} km`
+          : "-";
+
+      // Split Description column into lines
+      const descLines = splitTextIntoLines(desc, font, 8, descMaxWidth);
+
+      // Get the highest number of lines rendered in either Expenses or Description column
+      const maxLines = Math.max(speseLines.length, descLines.length);
+
+      const lineHeight = 11;
+      const textBlockHeight = (maxLines - 1) * lineHeight;
+      const rowNeededSpace = textBlockHeight + 20;
+
+      // Page break verification before drawing
+      if (y - rowNeededSpace < 50) {
         page = pdfDoc.addPage([595.28, 841.89]);
         y = 780;
-        // Riga intestazione tabella sulla nuova pagina
+
+        // Redraw table headers on the new page
         page.drawRectangle({
           x: 40,
           y: y - 5,
@@ -458,73 +531,100 @@ serve(async (req) => {
         });
         page.drawText("Data", {
           x: 45,
-          y: y,
+          y,
           size: 9,
           font: boldFont,
           color: rgb(0.29, 0.35, 0.25),
         });
         page.drawText("Tipo Attività", {
-          x: 105,
-          y: y,
+          x: 95,
+          y,
           size: 9,
           font: boldFont,
           color: rgb(0.29, 0.35, 0.25),
         });
-        page.drawText("Dettagli", {
-          x: 215,
-          y: y,
+        page.drawText("Tempo", {
+          x: 165,
+          y,
+          size: 9,
+          font: boldFont,
+          color: rgb(0.29, 0.35, 0.25),
+        });
+        page.drawText("Km", {
+          x: 225,
+          y,
+          size: 9,
+          font: boldFont,
+          color: rgb(0.29, 0.35, 0.25),
+        });
+        page.drawText("Spese", {
+          x: 265,
+          y,
           size: 9,
           font: boldFont,
           color: rgb(0.29, 0.35, 0.25),
         });
         page.drawText("Descrizione / Note", {
-          x: 335,
-          y: y,
+          x: 365,
+          y,
           size: 9,
           font: boldFont,
           color: rgb(0.29, 0.35, 0.25),
         });
         y -= 20;
       }
+
       const dateObj = new Date(act.activity_date);
       const formattedActDate = `${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}/${dateObj.getFullYear()}`;
       const typeLabel = typeLabels[act.type] || act.type;
-      // Dettagli dinamici
-      const detailsList = [];
-      if (act.duration != null)
-        detailsList.push(formatDuration(Number(act.duration)));
-      if (act.kilometers != null)
-        detailsList.push(`${Number(act.kilometers).toFixed(1)} km`);
-      if (act.stamp != null)
-        detailsList.push(`${Number(act.stamp).toFixed(2)} CHF`);
-      if (act.other_expenses != null)
-        detailsList.push(`Spese: ${Number(act.other_expenses).toFixed(2)} CHF`);
 
-      const detailsStr = detailsList.join(" | ");
-      const desc = act.description || "";
-      // Tronca la descrizione se troppo lunga per stare in tabella
-      const truncatedDesc =
-        desc.length > 35 ? desc.substring(0, 32) + "..." : desc;
+      // Draw baseline single-line standard fields
       page.drawText(formattedActDate, { x: 45, y, size: 8, font });
-      page.drawText(typeLabel, { x: 105, y, size: 8, font });
-      page.drawText(detailsStr, { x: 215, y, size: 8, font });
-      page.drawText(truncatedDesc, { x: 335, y, size: 8, font });
-      // Linea di divisione riga
+      page.drawText(typeLabel, { x: 95, y, size: 8, font });
+      page.drawText(tempoStr, { x: 165, y, size: 8, font });
+      page.drawText(kmStr, { x: 225, y, size: 8, font });
+
+      // Draw wrapped multi-line Expenses column
+      for (let i = 0; i < speseLines.length; i++) {
+        page.drawText(speseLines[i], {
+          x: 265,
+          y: y - i * lineHeight,
+          size: 8,
+          font,
+        });
+      }
+
+      // Draw wrapped multi-line Description column
+      for (let i = 0; i < descLines.length; i++) {
+        page.drawText(descLines[i], {
+          x: 365,
+          y: y - i * lineHeight,
+          size: 8,
+          font,
+        });
+      }
+
+      // Draw horizontal divider line exactly 6 points below the lowest text line block
+      const dividerY = y - textBlockHeight - 6;
       page.drawLine({
-        start: { x: 40, y: y - 6 },
-        end: { x: 555, y: y - 6 },
+        start: { x: 40, y: dividerY },
+        end: { x: 555, y: dividerY },
         thickness: 0.5,
-        color: rgb(0.95, 0.95, 0.95),
+        color: rgb(0.92, 0.92, 0.92),
       });
-      y -= 18;
+
+      // Advance baseline tracker safely for the next row
+      y = dividerY - 14;
     }
+
     const pdfBytes = await pdfDoc.save();
+
     return new Response(pdfBytes, {
       status: 200,
       headers: {
         ...corsHeaders,
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="statistiche_${pupil.name}.pdf"`,
+        "Content-Disposition": `inline; filename="statistiche_${pupil.name}.pdf"`,
       },
     });
   } catch (error) {
