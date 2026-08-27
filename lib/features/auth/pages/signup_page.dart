@@ -16,6 +16,13 @@ class _SignupPageState extends State<SignupPage> {
   final _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
   Future<void> _signup() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
