@@ -231,6 +231,16 @@ class _StatsPageState extends State<StatsPage> {
   Future<void> _exportPdf() async {
     if (_selectedPupil == null) return;
     setState(() => _isExporting = true);
+    // Traccia se il dialog di caricamento è ancora aperto, così da chiuderlo
+    // una sola volta ed evitare di fare pop() della pagina Statistiche.
+    bool loaderOpen = true;
+    void closeLoader() {
+      if (mounted && loaderOpen) {
+        Navigator.of(context).pop();
+        loaderOpen = false;
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -270,7 +280,7 @@ class _StatsPageState extends State<StatsPage> {
         }),
       );
       // Chiudi il dialog di caricamento
-      if (mounted) Navigator.of(context).pop();
+      closeLoader();
       if (response.statusCode != 200) {
         throw Exception(
           'Errore server: ${response.statusCode} - ${response.body}',
@@ -291,11 +301,10 @@ class _StatsPageState extends State<StatsPage> {
         await OpenFilex.open(file.path);
       }
     } catch (e) {
+      // Chiude il loader solo se non è già stato chiuso nel path di successo,
+      // altrimenti si farebbe pop() della pagina Statistiche.
+      closeLoader();
       if (mounted) {
-        // Chiudi il caricamento se ancora attivo (il dialog è visualizzato prima della chiamata)
-        // Per sicurezza, verifichiamo che il dialog sia presente.
-        // Se si è verificato un errore immediato prima di caricare la risposta, pop() chiude il dialog.
-        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Errore durante l\'esportazione: $e'),
