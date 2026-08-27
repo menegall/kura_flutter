@@ -44,6 +44,32 @@ class AuthService {
     } catch (_) {}
   }
 
+  /// Invia un'email con un codice OTP a 6 cifre per reimpostare la password.
+  /// Supabase risponde con successo anche se l'email non è registrata
+  /// (protezione contro l'enumerazione degli utenti).
+  Future<void> sendPasswordResetCode(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email);
+  }
+
+  /// Verifica il codice OTP di recupero e imposta la nuova password.
+  /// Al termine chiude la sessione di recupero: l'utente dovrà rifare il
+  /// login con la nuova password.
+  Future<void> verifyResetCodeAndUpdatePassword({
+    required String email,
+    required String code,
+    required String newPassword,
+  }) async {
+    await _supabase.auth.verifyOTP(
+      email: email,
+      token: code,
+      type: OtpType.recovery,
+    );
+    await _supabase.auth.updateUser(
+      UserAttributes(password: newPassword),
+    );
+    await _supabase.auth.signOut();
+  }
+
   Future<void> signOut() async {
     await _supabase.auth.signOut();
   }

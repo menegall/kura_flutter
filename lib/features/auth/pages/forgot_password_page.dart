@@ -2,40 +2,52 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
 import '../services/auth_service.dart';
-import 'signup_page.dart';
-import 'forgot_password_page.dart';
-import '../../home/pages/home_page.dart';
+import 'reset_password_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class ForgotPasswordPage extends StatefulWidget {
+  const ForgotPasswordPage({super.key});
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<ForgotPasswordPage> createState() => _ForgotPasswordPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
   final _authService = AuthService();
   bool _isLoading = false;
-  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _sendCode() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Per favore, inserisci la tua email.'),
+          backgroundColor: AppColors.terraCotta,
+        ),
+      );
+      return;
+    }
     setState(() => _isLoading = true);
     try {
-      await _authService.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      await _authService.sendPasswordResetCode(email);
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Se l\'indirizzo è registrato, riceverai un\'email con un codice di verifica.',
+            ),
+            backgroundColor: AppColors.darkGreen,
+          ),
+        );
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ResetPasswordPage(email: email),
+          ),
         );
       }
     } on AuthException catch (e) {
@@ -60,9 +72,15 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.darkGreen),
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -72,13 +90,13 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Icon(
-                  Icons.supervised_user_circle,
+                  Icons.lock_reset,
                   size: 100,
                   color: AppColors.terraCotta,
                 ),
                 const SizedBox(height: 32),
                 const Text(
-                  'Bentornato!',
+                  'Password dimenticata?',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -88,7 +106,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Accedi per gestire i tuoi pupilli',
+                  'Inserisci la tua email: ti invieremo un codice per reimpostare la password.',
                   style: TextStyle(
                     fontSize: 16,
                     color: AppColors.blueGrey,
@@ -104,54 +122,18 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.blueGrey),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                        color: AppColors.blueGrey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                ),
                 const SizedBox(height: 24),
                 _isLoading
                     ? const Center(child: CircularProgressIndicator(color: AppColors.terraCotta))
                     : ElevatedButton(
-                        onPressed: _login,
-                        child: const Text('Accedi'),
+                        onPressed: _sendCode,
+                        child: const Text('Invia codice'),
                       ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Password dimenticata?',
-                    style: TextStyle(color: AppColors.blueGrey, fontWeight: FontWeight.bold),
-                  ),
-                ),
                 const SizedBox(height: 16),
                 TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SignupPage()),
-                    );
-                  },
+                  onPressed: () => Navigator.of(context).pop(),
                   child: const Text(
-                    'Non hai un account? Registrati',
+                    'Torna al login',
                     style: TextStyle(color: AppColors.terraCotta, fontWeight: FontWeight.bold),
                   ),
                 ),
