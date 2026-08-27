@@ -4,8 +4,14 @@ import { PDFDocument, rgb, StandardFonts, PDFFont } from "pdf-lib";
 
 // Helper function to format duration
 function formatDuration(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
+  let h = Math.floor(hours);
+  let m = Math.round((hours - h) * 60);
+  // L'arrotondamento puo' spingere i minuti a 60 (es. 1.999h): riporta l'ora.
+  // Tenere allineato con lib/core/utils.dart.
+  if (m === 60) {
+    h += 1;
+    m = 0;
+  }
   if (h === 0) {
     return `${m} minuti`;
   } else if (m === 0) {
