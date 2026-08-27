@@ -14,6 +14,14 @@ class _AddPupilPageState extends State<AddPupilPage> {
   final _kmTarifController = TextEditingController();
   final _pupilsService = PupilsService();
   bool _isLoading = false;
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _hoursController.dispose();
+    _tarifController.dispose();
+    _kmTarifController.dispose();
+    super.dispose();
+  }
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);

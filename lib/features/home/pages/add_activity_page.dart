@@ -31,6 +31,16 @@ class _AddActivityPageState extends State<AddActivityPage> {
     {'value': 'meeting_pupils', 'label': 'Incontro con Pupillo'},
     {'value': 'other', 'label': 'Altro'},
   ];
+  @override
+  void dispose() {
+    _descriptionController.dispose();
+    _hoursController.dispose();
+    _minutesController.dispose();
+    _kilometersController.dispose();
+    _stampController.dispose();
+    _otherExpensesController.dispose();
+    super.dispose();
+  }
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
