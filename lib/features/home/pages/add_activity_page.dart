@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
 
@@ -130,8 +131,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
 
   @override
   Widget build(BuildContext context) {
-    final formattedDate =
-        '${_selectedDate.day.toString().padLeft(2, '0')}/${_selectedDate.month.toString().padLeft(2, '0')}/${_selectedDate.year}';
+    final formattedDate = formatDate(_selectedDate);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Registra Attività'),

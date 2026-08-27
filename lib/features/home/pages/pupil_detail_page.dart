@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
+import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
@@ -335,29 +336,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
   }
 
   Widget _buildActivityItem(Activity activity) {
-    IconData iconData;
-    switch (activity.type) {
-      case 'call':
-        iconData = Icons.phone_outlined;
-        break;
-      case 'transfert':
-        iconData = Icons.directions_car_outlined;
-        break;
-      case 'mail':
-        iconData = Icons.email_outlined;
-        break;
-      case 'meeting_various':
-        iconData = Icons.groups_outlined;
-        break;
-      case 'meeting_pupils':
-        iconData = Icons.person_search_outlined;
-        break;
-      case 'other':
-      default:
-        iconData = Icons.work_outline;
-    }
-    final formattedDate =
-        '${activity.activityDate.day.toString().padLeft(2, '0')}/${activity.activityDate.month.toString().padLeft(2, '0')}/${activity.activityDate.year}';
+    final formattedDate = formatDate(activity.activityDate);
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 12.0),
@@ -383,7 +362,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
         leading: CircleAvatar(
           backgroundColor: AppColors.beige.withValues(alpha: 0.5),
           foregroundColor: AppColors.darkGreen,
-          child: Icon(iconData),
+          child: Icon(activity.icon),
         ),
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -417,22 +396,22 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
               spacing: 12,
               children: [
                 if (activity.duration != null)
-                  _buildBadge(
+                  ActivityBadge(
                     Icons.access_time,
                     formatDuration(activity.duration!),
                   ),
                 if (activity.kilometers != null)
-                  _buildBadge(
+                  ActivityBadge(
                     Icons.map_outlined,
                     '${activity.kilometers!.toStringAsFixed(1)} km',
                   ),
                 if (activity.stamp != null)
-                  _buildBadge(
+                  ActivityBadge(
                     Icons.local_post_office_outlined,
                     '${activity.stamp!.toStringAsFixed(2)} CHF',
                   ),
                 if (activity.otherExpenses != null)
-                  _buildBadge(
+                  ActivityBadge(
                     Icons.monetization_on_outlined,
                     'Spese: ${activity.otherExpenses!.toStringAsFixed(2)} CHF',
                   ),
@@ -440,32 +419,6 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.offWhite,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: AppColors.beige, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AppColors.blueGrey),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.blueGrey,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }

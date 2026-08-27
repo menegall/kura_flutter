@@ -11,6 +11,7 @@ import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/constant.dart';
 import '../../../core/billing.dart';
+import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
@@ -545,8 +546,7 @@ class _StatsPageState extends State<StatsPage> {
 
   Widget _buildFilterControls(BuildContext context) {
     if (_selectedPeriod == 'Giorno') {
-      final formattedDay =
-          '${_selectedDay.day.toString().padLeft(2, '0')}/${_selectedDay.month.toString().padLeft(2, '0')}/${_selectedDay.year}';
+      final formattedDay = formatDate(_selectedDay);
       return InkWell(
         onTap: () => _selectDay(context),
         borderRadius: BorderRadius.circular(12),
@@ -1015,29 +1015,7 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildActivityCard(Activity activity) {
-    IconData iconData;
-    switch (activity.type) {
-      case 'call':
-        iconData = Icons.phone_outlined;
-        break;
-      case 'transfert':
-        iconData = Icons.directions_car_outlined;
-        break;
-      case 'mail':
-        iconData = Icons.email_outlined;
-        break;
-      case 'meeting_various':
-        iconData = Icons.groups_outlined;
-        break;
-      case 'meeting_pupils':
-        iconData = Icons.person_search_outlined;
-        break;
-      case 'other':
-      default:
-        iconData = Icons.work_outline;
-    }
-    final formattedDate =
-        '${activity.activityDate.day.toString().padLeft(2, '0')}/${activity.activityDate.month.toString().padLeft(2, '0')}/${activity.activityDate.year}';
+    final formattedDate = formatDate(activity.activityDate);
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 10.0),
@@ -1068,7 +1046,7 @@ class _StatsPageState extends State<StatsPage> {
               CircleAvatar(
                 backgroundColor: AppColors.beige.withValues(alpha: 0.5),
                 foregroundColor: AppColors.darkGreen,
-                child: Icon(iconData, size: 20),
+                child: Icon(activity.icon, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1113,24 +1091,28 @@ class _StatsPageState extends State<StatsPage> {
                       spacing: 8,
                       children: [
                         if (activity.duration != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.access_time,
                             formatDuration(activity.duration!),
+                            dense: true,
                           ),
                         if (activity.kilometers != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.map_outlined,
                             '${activity.kilometers!.toStringAsFixed(1)} km',
+                            dense: true,
                           ),
                         if (activity.stamp != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.local_post_office_outlined,
                             '${activity.stamp!.toStringAsFixed(2)} CHF',
+                            dense: true,
                           ),
                         if (activity.otherExpenses != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.monetization_on_outlined,
                             'Spese: ${activity.otherExpenses!.toStringAsFixed(2)} CHF',
+                            dense: true,
                           ),
                       ],
                     ),
@@ -1140,32 +1122,6 @@ class _StatsPageState extends State<StatsPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.offWhite,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.beige, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: AppColors.blueGrey),
-          const SizedBox(width: 3),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 9,
-              color: AppColors.blueGrey,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
       ),
     );
   }

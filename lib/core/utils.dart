@@ -1,3 +1,10 @@
+import 'package:intl/intl.dart';
+
+final DateFormat _dayMonthYear = DateFormat('dd/MM/yyyy');
+
+/// Formatta una data come `gg/MM/aaaa`.
+String formatDate(DateTime date) => _dayMonthYear.format(date);
+
 String formatDuration(double hours) {
   int h = hours.floor();
   // Arrotonda per prevenire problemi di precisione dei float (es. 0.25 * 60 = 15)

@@ -123,29 +123,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    IconData iconData;
-    switch (_activity.type) {
-      case 'call':
-        iconData = Icons.phone_outlined;
-        break;
-      case 'transfert':
-        iconData = Icons.directions_car_outlined;
-        break;
-      case 'mail':
-        iconData = Icons.email_outlined;
-        break;
-      case 'meeting_various':
-        iconData = Icons.groups_outlined;
-        break;
-      case 'meeting_pupils':
-        iconData = Icons.person_search_outlined;
-        break;
-      case 'other':
-      default:
-        iconData = Icons.work_outline;
-    }
-    final formattedDate =
-        '${_activity.activityDate.day.toString().padLeft(2, '0')}/${_activity.activityDate.month.toString().padLeft(2, '0')}/${_activity.activityDate.year}';
+    final formattedDate = formatDate(_activity.activityDate);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -216,7 +194,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                             radius: 28,
                             backgroundColor: AppColors.beige.withValues(alpha: 0.5),
                             foregroundColor: AppColors.darkGreen,
-                            child: Icon(iconData, size: 28),
+                            child: Icon(_activity.icon, size: 28),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
