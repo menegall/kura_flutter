@@ -1,0 +1,41 @@
+name: Deploy Web
+
+# main -> produzione (https://kura-time.pages.dev)
+# develop -> anteprima (https://develop.kura-time.pages.dev)
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CLOUDFLARE_PROJECT_NAME: kura-time
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.4
+          cache: true
+
+      - run: flutter pub get
+      - run: flutter build web --release
+      # flutter build non copia _headers in build/web
+      - run: cp web/_headers build/web/_headers
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy build/web --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=${{ github.ref_name }}
