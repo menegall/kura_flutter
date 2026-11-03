@@ -42,7 +42,11 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
+            content: Text(
+              e.code == 'email_not_confirmed'
+                  ? 'Email non ancora confermata: apri il link che ti abbiamo inviato.'
+                  : e.message,
+            ),
             backgroundColor: AppColors.terraCotta,
           ),
         );
