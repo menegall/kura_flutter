@@ -5,6 +5,7 @@ import '../../auth/services/auth_service.dart';
 import '../../auth/pages/login_page.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
+import 'tutorial_page.dart';
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override
@@ -377,6 +378,43 @@ class _SettingsPageState extends State<SettingsPage> {
                                 },
                               ),
                             ),
+                  const SizedBox(height: 28),
+                  // Sezione Guida (tutorial iniziale)
+                  const Text(
+                    'Guida',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.beige, width: 1),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.school_outlined, color: AppColors.terraCotta),
+                      title: const Text(
+                        'Rivedi il tutorial',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      subtitle: const Text(
+                        'Come aggiungere pupilli, registrare attività ed esportare il PDF.',
+                        style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.blueGrey),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const TutorialPage(),
+                          fullscreenDialog: true,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 40),
                   // Sezione Operazioni Pericolose (Cancellazione account)
                   const Divider(color: AppColors.beige, thickness: 1.5),

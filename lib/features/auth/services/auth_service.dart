@@ -34,6 +34,19 @@ class AuthService {
     return response;
   }
 
+  /// Il flag sta nei metadati dell'utente su Supabase (non sul dispositivo),
+  /// così il tutorial non ricompare cambiando telefono o aprendo la webapp.
+  bool get hasSeenTutorial =>
+      _supabase.auth.currentUser?.userMetadata?['tutorial_seen'] == true;
+
+  Future<void> markTutorialSeen() async {
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(data: {'tutorial_seen': true}),
+      );
+    } catch (_) {}
+  }
+
   Future<void> _saveLoginTimestamp() async {
     try {
       final prefs = await SharedPreferences.getInstance();

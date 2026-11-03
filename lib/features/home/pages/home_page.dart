@@ -9,6 +9,7 @@ import 'add_pupil_page.dart';
 import 'pupil_detail_page.dart';
 import 'stats_page.dart';
 import 'settings_page.dart';
+import 'tutorial_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -21,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   List<Pupil>? _pupils;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _tutorialChecked = false;
   @override
   void initState() {
     super.initState();
@@ -36,6 +38,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _pupils = list;
       });
+      _maybeShowTutorial(list);
     } catch (e) {
       setState(() {
         _errorMessage = 'Impossibile caricare i pupilli. Riprova più tardi.';
@@ -45,6 +48,19 @@ class _HomePageState extends State<HomePage> {
         _isLoading = false;
       });
     }
+  }
+  // Solo per i nuovi account: chi ha già dei pupilli usa l'app da prima del
+  // tutorial e non ha bisogno di vederlo.
+  void _maybeShowTutorial(List<Pupil> pupils) {
+    if (_tutorialChecked) return;
+    _tutorialChecked = true;
+    if (pupils.isNotEmpty || _authService.hasSeenTutorial || !mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const TutorialPage(),
+        fullscreenDialog: true,
+      ),
+    );
   }
   Future<void> _logout() async {
     await _authService.signOut();
