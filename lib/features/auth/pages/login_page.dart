@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
+import 'forgot_password_page.dart';
 import '../../home/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -41,7 +42,11 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.message),
+            content: Text(
+              e.code == 'email_not_confirmed'
+                  ? 'Email non ancora confermata: apri il link che ti abbiamo inviato.'
+                  : e.message,
+            ),
             backgroundColor: AppColors.terraCotta,
           ),
         );
@@ -130,6 +135,18 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: _login,
                         child: const Text('Accedi'),
                       ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                    );
+                  },
+                  child: const Text(
+                    'Password dimenticata?',
+                    style: TextStyle(color: AppColors.blueGrey, fontWeight: FontWeight.bold),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {

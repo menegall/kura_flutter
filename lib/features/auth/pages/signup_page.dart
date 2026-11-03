@@ -38,18 +38,31 @@ class _SignupPageState extends State<SignupPage> {
     }
     setState(() => _isLoading = true);
     try {
-      await _authService.signUp(
+      final response = await _authService.signUp(
         email: email,
         password: password,
         name: name,
       );
-      if (mounted) {
-        // Dopo il signup, Supabase potrebbe effettuare il login automatico
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()),
-          (route) => false, // Rimuove tutte le pagine precedenti
+      if (!mounted) return;
+      // Con la conferma email attiva Supabase non restituisce una sessione:
+      // l'utente deve prima cliccare il link ricevuto per email.
+      if (response.session == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Ti abbiamo inviato un\'email di conferma a $email. Apri il link e poi accedi.',
+            ),
+            backgroundColor: AppColors.darkGreen,
+            duration: const Duration(seconds: 8),
+          ),
         );
+        Navigator.of(context).pop();
+        return;
       }
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const HomePage()),
+        (route) => false, // Rimuove tutte le pagine precedenti
+      );
     } on AuthException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
