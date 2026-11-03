@@ -86,7 +86,15 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     } on AuthException catch (e) {
       if (mounted) {
         final message = e.message.toLowerCase();
-        if (message.contains('expired') ||
+        if (e.code == 'same_password') {
+          _showError(
+            'La nuova password deve essere diversa da quella attuale. Richiedi un nuovo codice.',
+          );
+        } else if (e.code == 'weak_password') {
+          _showError(
+            'Password troppo debole. Scegline una più sicura e richiedi un nuovo codice.',
+          );
+        } else if (message.contains('expired') ||
             message.contains('invalid') ||
             e.statusCode == '403') {
           _showError('Codice non valido o scaduto. Richiedi un nuovo codice.');

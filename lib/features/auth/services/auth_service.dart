@@ -64,10 +64,16 @@ class AuthService {
       token: code,
       type: OtpType.recovery,
     );
-    await _supabase.auth.updateUser(
-      UserAttributes(password: newPassword),
-    );
-    await _supabase.auth.signOut();
+    // Il codice è ormai consumato: anche se l'aggiornamento fallisce la
+    // sessione di recupero va chiusa, altrimenti al riavvio l'AuthGate
+    // farebbe entrare l'utente senza password.
+    try {
+      await _supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } finally {
+      await _supabase.auth.signOut();
+    }
   }
 
   Future<void> signOut() async {
