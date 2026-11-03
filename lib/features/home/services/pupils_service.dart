@@ -5,7 +5,15 @@ import '../models/activity_model.dart';
 class PupilsService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Recupera tutti i pupilli dell'utente loggato, con le relative attività associate per sommare le ore
+  // Primo giorno dell'anno corrente in formato ISO (YYYY-MM-DD).
+  // Le ore mostrate in home/dettaglio sono sempre relative all'anno corrente:
+  // filtriamo le attività embedded lato server per non scaricarle tutte.
+  // Il filtro su una risorsa referenziata NON riduce le righe dei pupilli
+  // (restano anche quelli senza attività quest'anno).
+  static String get _startOfCurrentYear => '${DateTime.now().year}-01-01';
+
+  // Recupera tutti i pupilli dell'utente loggato, con le attività dell'anno
+  // corrente per sommare le ore lavorate.
   Future<List<Pupil>> getPupils() async {
     final currentUser = _supabase.auth.currentUser;
     if (currentUser == null) throw Exception('Utente non autenticato');
@@ -13,6 +21,7 @@ class PupilsService {
         .from('pupils')
         .select('*, activities(duration, activity_date)')
         .eq('user_id', currentUser.id)
+        .gte('activities.activity_date', _startOfCurrentYear)
         .order('name');
     final list = response as List<dynamic>;
     return list
@@ -20,12 +29,13 @@ class PupilsService {
         .toList();
   }
 
-  // Recupera un singolo pupillo con le sue attività associate per i dettagli
+  // Recupera un singolo pupillo con le attività dell'anno corrente per i dettagli
   Future<Pupil> getPupilById(String id) async {
     final response = await _supabase
         .from('pupils')
         .select('*, activities(duration, activity_date)')
         .eq('id', id)
+        .gte('activities.activity_date', _startOfCurrentYear)
         .single();
 
     return Pupil.fromJson(response);

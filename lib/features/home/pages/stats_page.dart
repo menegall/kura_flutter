@@ -10,6 +10,8 @@ import 'package:open_filex/open_filex.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/constant.dart';
+import '../../../core/billing.dart';
+import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
@@ -44,9 +46,10 @@ class _StatsPageState extends State<StatsPage> {
   double _meetingPupilsHours = 0.0;
   double _otherHours = 0.0;
   double _mailHours = 0.0;
+  double _transfertHours = 0.0;
   double _totalKm = 0.0;
   double _totalStamps = 0.0;
-  double _totalOtherExpenses = 0.0;
+  BillingSummary _billing = BillingSummary.empty;
   final List<String> _monthsItalian = [
     'Gennaio',
     'Febbraio',
@@ -139,26 +142,22 @@ class _StatsPageState extends State<StatsPage> {
         tempFiltered.add(act);
       }
     }
-    // Calcolo metriche
-    double tempTotalHours = 0.0;
+    // Totali economici: unica sorgente di verità, allineata alla edge function.
+    final billing = computeBilling(
+      tempFiltered,
+      tarif: _selectedPupil?.tarif ?? 0.0,
+      kmTarif: _selectedPupil?.kmTarif ?? 0.0,
+    );
+
+    // Ripartizione delle ore per categoria (per la griglia delle card).
     double tempCall = 0.0;
     double tempMeetingVarious = 0.0;
     double tempMeetingPupils = 0.0;
     double tempOther = 0.0;
     double tempMail = 0.0;
-    double tempKm = 0.0;
-    double tempStamps = 0.0;
-    double tempOtherExpenses = 0.0;
+    double tempTransfert = 0.0;
     for (var act in tempFiltered) {
       final duration = act.duration ?? 0.0;
-      final kilometers = act.kilometers ?? 0.0;
-      final stamp = act.stamp ?? 0.0;
-      final otherExpenses = act.otherExpenses ?? 0.0;
-
-      tempTotalHours += duration;
-      tempOtherExpenses += otherExpenses;
-      tempKm += kilometers;
-
       switch (act.type) {
         case 'call':
           tempCall += duration;
@@ -173,11 +172,10 @@ class _StatsPageState extends State<StatsPage> {
           tempOther += duration;
           break;
         case 'transfert':
-          // Chilometri calcolati a livello globale per tutte le attività
+          tempTransfert += duration;
           break;
         case 'mail':
           tempMail += duration;
-          tempStamps += stamp;
           break;
       }
     }
@@ -189,15 +187,16 @@ class _StatsPageState extends State<StatsPage> {
     }
     setState(() {
       _filteredActivities = tempFiltered;
-      _totalHours = tempTotalHours;
+      _billing = billing;
+      _totalHours = billing.workedHours;
       _callHours = tempCall;
       _meetingVariousHours = tempMeetingVarious;
       _meetingPupilsHours = tempMeetingPupils;
       _otherHours = tempOther;
       _mailHours = tempMail;
-      _totalKm = tempKm;
-      _totalStamps = tempStamps;
-      _totalOtherExpenses = tempOtherExpenses;
+      _transfertHours = tempTransfert;
+      _totalKm = billing.totalKm;
+      _totalStamps = billing.totalStamps;
     });
   }
 
@@ -231,6 +230,16 @@ class _StatsPageState extends State<StatsPage> {
   Future<void> _exportPdf() async {
     if (_selectedPupil == null) return;
     setState(() => _isExporting = true);
+    // Traccia se il dialog di caricamento è ancora aperto, così da chiuderlo
+    // una sola volta ed evitare di fare pop() della pagina Statistiche.
+    bool loaderOpen = true;
+    void closeLoader() {
+      if (mounted && loaderOpen) {
+        Navigator.of(context).pop();
+        loaderOpen = false;
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -270,7 +279,7 @@ class _StatsPageState extends State<StatsPage> {
         }),
       );
       // Chiudi il dialog di caricamento
-      if (mounted) Navigator.of(context).pop();
+      closeLoader();
       if (response.statusCode != 200) {
         throw Exception(
           'Errore server: ${response.statusCode} - ${response.body}',
@@ -291,11 +300,10 @@ class _StatsPageState extends State<StatsPage> {
         await OpenFilex.open(file.path);
       }
     } catch (e) {
+      // Chiude il loader solo se non è già stato chiuso nel path di successo,
+      // altrimenti si farebbe pop() della pagina Statistiche.
+      closeLoader();
       if (mounted) {
-        // Chiudi il caricamento se ancora attivo (il dialog è visualizzato prima della chiamata)
-        // Per sicurezza, verifichiamo che il dialog sia presente.
-        // Se si è verificato un errore immediato prima di caricare la risposta, pop() chiude il dialog.
-        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Errore durante l\'esportazione: $e'),
@@ -538,8 +546,7 @@ class _StatsPageState extends State<StatsPage> {
 
   Widget _buildFilterControls(BuildContext context) {
     if (_selectedPeriod == 'Giorno') {
-      final formattedDay =
-          '${_selectedDay.day.toString().padLeft(2, '0')}/${_selectedDay.month.toString().padLeft(2, '0')}/${_selectedDay.year}';
+      final formattedDay = formatDate(_selectedDay);
       return InkWell(
         onTap: () => _selectDay(context),
         borderRadius: BorderRadius.circular(12),
@@ -696,6 +703,8 @@ class _StatsPageState extends State<StatsPage> {
           ),
         ),
         const SizedBox(height: 20),
+        _buildBillingCard(),
+        const SizedBox(height: 20),
         // Grid per Categoria
         GridView.count(
           crossAxisCount: 2,
@@ -711,13 +720,7 @@ class _StatsPageState extends State<StatsPage> {
               value: formatDuration(_callHours),
               color: AppColors.darkGreen,
             ),
-            _buildStatCard(
-              icon: Icons.directions_car_outlined,
-              title: 'Trasferte',
-              value: '${_totalKm.toStringAsFixed(1)} km',
-              subtitle: 'Solo km',
-              color: AppColors.terraCotta,
-            ),
+            _buildTransfertCard(),
             _buildMailCard(),
             _buildStatCard(
               icon: Icons.person_search_outlined,
@@ -871,30 +874,148 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+  Widget _buildTransfertCard() {
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.beige, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Icon(
+              Icons.directions_car_outlined,
+              color: AppColors.terraCotta,
+              size: 24,
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Trasferte',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.blueGrey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  formatDuration(_transfertHours),
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.darkGreen,
+                  ),
+                ),
+                Text(
+                  '${_totalKm.toStringAsFixed(1)} km percorsi',
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.terraCotta,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBillingCard() {
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.terraCotta, width: 1.2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Totale da Fatturare nel Periodo',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.blueGrey,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '${_billing.grandTotal.toStringAsFixed(2)} CHF',
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.terraCotta,
+                ),
+              ),
+            ),
+            const Divider(height: 24, color: AppColors.beige),
+            _buildBillingRow(
+              '${formatDuration(_billing.workedHours)} × ${(_selectedPupil?.tarif ?? 0).toStringAsFixed(2)} CHF/h',
+              '${_billing.hoursCost.toStringAsFixed(2)} CHF',
+            ),
+            const SizedBox(height: 6),
+            _buildBillingRow(
+              '${_billing.totalKm.toStringAsFixed(1)} km × ${(_selectedPupil?.kmTarif ?? 0).toStringAsFixed(2)} CHF/km',
+              '${_billing.kmCost.toStringAsFixed(2)} CHF',
+            ),
+            const SizedBox(height: 6),
+            _buildBillingRow(
+              'Francobolli',
+              '${_billing.totalStamps.toStringAsFixed(2)} CHF',
+            ),
+            if (_billing.totalOtherExpenses > 0) ...[
+              const SizedBox(height: 6),
+              _buildBillingRow(
+                'Altre spese',
+                '${_billing.totalOtherExpenses.toStringAsFixed(2)} CHF',
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBillingRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Flexible(
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.blueGrey),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkGreen,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildActivityCard(Activity activity) {
-    IconData iconData;
-    switch (activity.type) {
-      case 'call':
-        iconData = Icons.phone_outlined;
-        break;
-      case 'transfert':
-        iconData = Icons.directions_car_outlined;
-        break;
-      case 'mail':
-        iconData = Icons.email_outlined;
-        break;
-      case 'meeting_various':
-        iconData = Icons.groups_outlined;
-        break;
-      case 'meeting_pupils':
-        iconData = Icons.person_search_outlined;
-        break;
-      case 'other':
-      default:
-        iconData = Icons.work_outline;
-    }
-    final formattedDate =
-        '${activity.activityDate.day.toString().padLeft(2, '0')}/${activity.activityDate.month.toString().padLeft(2, '0')}/${activity.activityDate.year}';
+    final formattedDate = formatDate(activity.activityDate);
     return Card(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 10.0),
@@ -925,7 +1046,7 @@ class _StatsPageState extends State<StatsPage> {
               CircleAvatar(
                 backgroundColor: AppColors.beige.withValues(alpha: 0.5),
                 foregroundColor: AppColors.darkGreen,
-                child: Icon(iconData, size: 20),
+                child: Icon(activity.icon, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -970,24 +1091,28 @@ class _StatsPageState extends State<StatsPage> {
                       spacing: 8,
                       children: [
                         if (activity.duration != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.access_time,
                             formatDuration(activity.duration!),
+                            dense: true,
                           ),
                         if (activity.kilometers != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.map_outlined,
                             '${activity.kilometers!.toStringAsFixed(1)} km',
+                            dense: true,
                           ),
                         if (activity.stamp != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.local_post_office_outlined,
                             '${activity.stamp!.toStringAsFixed(2)} CHF',
+                            dense: true,
                           ),
                         if (activity.otherExpenses != null)
-                          _buildBadge(
+                          ActivityBadge(
                             Icons.monetization_on_outlined,
                             'Spese: ${activity.otherExpenses!.toStringAsFixed(2)} CHF',
+                            dense: true,
                           ),
                       ],
                     ),
@@ -997,32 +1122,6 @@ class _StatsPageState extends State<StatsPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBadge(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.offWhite,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: AppColors.beige, width: 0.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 10, color: AppColors.blueGrey),
-          const SizedBox(width: 3),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 9,
-              color: AppColors.blueGrey,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
       ),
     );
   }

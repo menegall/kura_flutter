@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 class Activity {
   final String id;
   final String pupilId;
@@ -52,6 +54,25 @@ class Activity {
       case 'other':
       default:
         return 'Altro';
+    }
+  }
+
+  // Icona associata al tipo di attività
+  IconData get icon {
+    switch (type) {
+      case 'call':
+        return Icons.phone_outlined;
+      case 'transfert':
+        return Icons.directions_car_outlined;
+      case 'mail':
+        return Icons.email_outlined;
+      case 'meeting_various':
+        return Icons.groups_outlined;
+      case 'meeting_pupils':
+        return Icons.person_search_outlined;
+      case 'other':
+      default:
+        return Icons.work_outline;
     }
   }
 }

@@ -24,6 +24,12 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadUserData();
     _loadPupils();
   }
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
   void _loadUserData() {
     final user = Supabase.instance.client.auth.currentUser;
     if (user != null) {
