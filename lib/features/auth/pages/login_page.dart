@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
+import '../../../core/widgets/install_banner.dart';
 import '../services/auth_service.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
-import '../../home/pages/home_page.dart';
+import '../../home/pages/main_shell.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -35,7 +36,7 @@ class _LoginPageState extends State<LoginPage> {
       );
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const MainShell()),
         );
       }
     } on AuthException catch (e) {
@@ -64,105 +65,138 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(
-                  Icons.supervised_user_circle,
-                  size: 100,
-                  color: AppColors.terraCotta,
-                ),
-                const SizedBox(height: 32),
-                const Text(
-                  'Bentornato!',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.darkGreen,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Accedi per gestire i tuoi pupilli',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.blueGrey,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined, color: AppColors.blueGrey),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.blueGrey),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                        color: AppColors.blueGrey,
+      // Il banner va mostrato prima del login: su iPhone l'app installata
+      // sulla Home non condivide la sessione con Safari.
+      body: Column(
+        children: [
+          const InstallBanner(),
+          Expanded(
+            child: SafeArea(
+              top: false,
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Icon(
+                        Icons.supervised_user_circle,
+                        size: 100,
+                        color: AppColors.terraCotta,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                  ),
-                  obscureText: _obscurePassword,
-                ),
-                const SizedBox(height: 24),
-                _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.terraCotta))
-                    : ElevatedButton(
-                        onPressed: _login,
-                        child: const Text('Accedi'),
+                      const SizedBox(height: 32),
+                      const Text(
+                        'Bentornato!',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.darkGreen,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Password dimenticata?',
-                    style: TextStyle(color: AppColors.blueGrey, fontWeight: FontWeight.bold),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Accedi per gestire i tuoi pupilli',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: AppColors.blueGrey,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      TextField(
+                        controller: _emailController,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: AppColors.blueGrey,
+                          ),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppColors.blueGrey,
+                          ),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: AppColors.blueGrey,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                      ),
+                      const SizedBox(height: 24),
+                      _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.terraCotta,
+                              ),
+                            )
+                          : ElevatedButton(
+                              onPressed: _login,
+                              child: const Text('Accedi'),
+                            ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Password dimenticata?',
+                          style: TextStyle(
+                            color: AppColors.blueGrey,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SignupPage(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          'Non hai un account? Registrati',
+                          style: TextStyle(
+                            color: AppColors.terraCotta,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const SignupPage()),
-                    );
-                  },
-                  child: const Text(
-                    'Non hai un account? Registrati',
-                    style: TextStyle(color: AppColors.terraCotta, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
