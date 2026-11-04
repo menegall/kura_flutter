@@ -6,10 +6,11 @@
       "date": "2026-11-04",
       "items": [
         "Nuovo menu in basso: Pupilli, Statistiche e Impostazioni",
-        "Il pulsante + registra subito un'attività",
-        "Registrazione delle attività più veloce, con durate rapide",
-        "Pupilli archiviabili ed export delle attività in CSV",
-        "Resti collegato senza dover rifare il login ogni settimana"
+        "Registra un'attività in pochi tocchi con il pulsante + e le durate rapide",
+        "Archivia i pupilli con il mandato concluso, senza perdere le loro attività",
+        "Esporta le attività in CSV per Excel, oltre al PDF",
+        "Resti collegato: niente più login ogni settimana",
+        "Installa Kura sulla schermata Home e ricevi un avviso a ogni aggiornamento"
       ]
     }
   ]
