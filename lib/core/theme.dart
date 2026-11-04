@@ -4,9 +4,9 @@ class AppColors {
   static const Color beige = Color(0xFFE6DFD3);
   static const Color darkGreen = Color(0xFF4A5840);
   static const Color offWhite = Color(0xFFFDFBF7);
-  static const Color blueGrey = Color(0xFF78909C);
+  static const Color blueGrey = Color(0xFF5E7383);
   // Avviso: ore quasi esaurite (oltre l'80% del monte ore)
-  static const Color amber = Color(0xFFB7791F);
+  static const Color amber = Color(0xFF9A6516);
 }
 final ThemeData appTheme = ThemeData(
   scaffoldBackgroundColor: AppColors.offWhite,

@@ -24,12 +24,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         final screenWidth = MediaQuery.of(context).size.width;
-
-        final mediaQueryData = MediaQuery.of(context);
-        final scaledMediaQuery = mediaQueryData.copyWith(
-          textScaler: const TextScaler.linear(0.88),
-        );
-        final appWidget = MediaQuery(data: scaledMediaQuery, child: child!);
+        // Il testo segue la dimensione scelta nelle impostazioni del
+        // telefono (accessibilità), senza riduzioni forzate.
+        final appWidget = child!;
 
         if (screenWidth <= 600) {
           return appWidget;
