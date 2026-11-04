@@ -27,9 +27,9 @@ class ActivityFormData {
 
 /// Form condiviso da "Registra attività" e "Modifica attività".
 ///
-/// Ordine pensato per l'inserimento veloce: tipo e durata (obbligatori) in
-/// alto con scelte rapide, poi data, note e infine km e spese, che restano
-/// nascosti finché non servono (i km sono sempre visibili per le trasferte).
+/// Ordine dei campi: tipo, note, durata (con scelte rapide) e data, infine
+/// km e spese, che restano nascosti finché non servono (i km sono sempre
+/// visibili per le trasferte).
 class ActivityForm extends StatefulWidget {
   final Activity? initial;
   final bool requireDuration;
@@ -202,6 +202,18 @@ class _ActivityFormState extends State<ActivityForm> {
             ],
           ),
           const SizedBox(height: 28),
+          _sectionTitle('Note (facoltative)'),
+          TextFormField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              hintText: 'Es: colloquio con la banca per il conto',
+              prefixIcon: Icon(Icons.description_outlined, color: AppColors.blueGrey),
+            ),
+            maxLines: 3,
+            minLines: 1,
+            textCapitalization: TextCapitalization.sentences,
+          ),
+          const SizedBox(height: 28),
           _sectionTitle(widget.requireDuration ? 'Durata' : 'Durata (facoltativa)'),
           Wrap(
             spacing: 8,
@@ -281,18 +293,6 @@ class _ActivityFormState extends State<ActivityForm> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 28),
-          _sectionTitle('Note (facoltative)'),
-          TextFormField(
-            controller: _descriptionController,
-            decoration: const InputDecoration(
-              hintText: 'Es: colloquio con la banca per il conto',
-              prefixIcon: Icon(Icons.description_outlined, color: AppColors.blueGrey),
-            ),
-            maxLines: 3,
-            minLines: 1,
-            textCapitalization: TextCapitalization.sentences,
           ),
           const SizedBox(height: 20),
           if (isTransfer) ...[
