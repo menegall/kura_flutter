@@ -20,10 +20,10 @@ import '../services/pupils_service.dart';
 import '../services/activities_csv.dart';
 import 'activity_detail_page.dart';
 
+/// Scheda Statistiche. Dal dettaglio di un pupillo ci si arriva con
+/// [openStatsForPupil], che chiede di mostrare quel pupillo.
 class StatsPage extends StatefulWidget {
-  /// Pupillo da mostrare all'apertura (es. dal dettaglio pupillo).
-  final String? initialPupilId;
-  const StatsPage({super.key, this.initialPupilId});
+  const StatsPage({super.key});
   @override
   State<StatsPage> createState() => _StatsPageState();
 }
@@ -63,13 +63,27 @@ class _StatsPageState extends State<StatsPage> {
   void initState() {
     super.initState();
     appDataRefresh.addListener(_loadPupils);
+    requestedStatsPupilId.addListener(_onPupilRequested);
     _loadPupils();
   }
 
   @override
   void dispose() {
     appDataRefresh.removeListener(_loadPupils);
+    requestedStatsPupilId.removeListener(_onPupilRequested);
     super.dispose();
+  }
+
+  // Richiesta dal dettaglio pupillo: se la lista è già caricata si seleziona
+  // subito, altrimenti ci pensa _loadPupils.
+  void _onPupilRequested() {
+    final id = requestedStatsPupilId.value;
+    if (id == null || _pupils == null) return;
+    final match = _pupils!.where((p) => p.id == id);
+    if (match.isEmpty) return;
+    requestedStatsPupilId.value = null;
+    setState(() => _selectedPupil = match.first);
+    _loadActivitiesForSelectedPupil();
   }
 
   Future<void> _loadPupils() async {
@@ -83,8 +97,9 @@ class _StatsPageState extends State<StatsPage> {
       setState(() {
         _pupils = list;
         if (list.isNotEmpty) {
-          // Al ricaricamento resta selezionato lo stesso pupillo.
-          final wantedId = _selectedPupil?.id ?? widget.initialPupilId;
+          // Al ricaricamento resta selezionato lo stesso pupillo, salvo
+          // richiesta dal dettaglio pupillo.
+          final wantedId = requestedStatsPupilId.value ?? _selectedPupil?.id;
           _selectedPupil = list.firstWhere(
             (p) => p.id == wantedId,
             orElse: () => list.first,
@@ -92,6 +107,7 @@ class _StatsPageState extends State<StatsPage> {
           _loadActivitiesForSelectedPupil();
         }
       });
+      requestedStatsPupilId.value = null;
     } catch (e) {
       if (!mounted) return;
       setState(() {

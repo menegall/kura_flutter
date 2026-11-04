@@ -51,7 +51,8 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   }
 
   Future<void> _editActivity() async {
-    final result = await Navigator.of(context).push<bool>(
+    // I form si aprono a schermo intero, sopra il menu.
+    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(
         builder: (context) =>
             EditActivityPage(activity: _activity, pupilName: widget.pupilName),

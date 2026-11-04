@@ -7,10 +7,15 @@ import 'stats_page.dart';
 
 /// Struttura principale dopo il login: tre schede (Pupilli, Statistiche,
 /// Impostazioni) con il menu in basso sul telefono e a sinistra su schermi
-/// larghi. Le schede restano in vita (IndexedStack) così conservano i filtri
-/// scelti; a ogni cambio ricaricano i dati tramite [appDataRefresh].
+/// larghi. Ogni scheda ha il proprio navigatore, così le pagine di dettaglio
+/// si aprono dentro la scheda con il menu sempre visibile. Le schede restano
+/// in vita (IndexedStack) e conservano filtri e pagine aperte; a ogni cambio
+/// ricaricano i dati tramite [appDataRefresh].
 class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+  /// Pagine principali delle schede; di default Pupilli, Statistiche e
+  /// Impostazioni (sostituibili nei test).
+  final List<Widget>? tabRoots;
+  const MainShell({super.key, this.tabRoots});
   @override
   State<MainShell> createState() => _MainShellState();
 }
@@ -35,7 +40,30 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _select(int index) {
-    if (index != currentAppTab.value) currentAppTab.value = index;
+    if (index == currentAppTab.value) {
+      // Toccare la scheda già attiva riporta alla sua pagina principale.
+      resetTabToRoot(index);
+    } else {
+      currentAppTab.value = index;
+    }
+  }
+
+  static const _tabRoots = [HomePage(), StatsPage(), SettingsPage()];
+
+  // Il tasto/gesto "indietro" chiude prima le pagine aperte nella scheda
+  // visibile; solo quando la scheda è alla pagina principale agisce l'app.
+  Widget _tabNavigator(int tab, bool visible) {
+    final key = tabNavigatorKeys[tab];
+    return NavigatorPopHandler<Object?>(
+      enabled: visible,
+      onPopWithResult: (_) => key.currentState?.maybePop(),
+      child: Navigator(
+        key: key,
+        onGenerateInitialRoutes: (navigator, initialRoute) => [
+          MaterialPageRoute(builder: (context) => (widget.tabRoots ?? _tabRoots)[tab]),
+        ],
+      ),
+    );
   }
 
   static const _destinations = [
@@ -59,7 +87,9 @@ class _MainShellState extends State<MainShell> {
     final isWide = MediaQuery.of(context).size.width > 800;
     final pages = IndexedStack(
       index: index,
-      children: const [HomePage(), StatsPage(), SettingsPage()],
+      children: [
+        for (var tab = 0; tab < tabNavigatorKeys.length; tab++) _tabNavigator(tab, tab == index),
+      ],
     );
 
     if (isWide) {
