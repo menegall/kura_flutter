@@ -38,8 +38,23 @@ class Activity {
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
+  /// Tipi di attività nell'ordine in cui compaiono nel form.
+  static const List<String> types = [
+    'call',
+    'meeting_pupils',
+    'meeting_various',
+    'mail',
+    'transfert',
+    'other',
+  ];
+
   // Metodo per visualizzare il tipo in Italiano
-  String get typeLabel {
+  String get typeLabel => labelFor(type);
+
+  // Icona associata al tipo di attività
+  IconData get icon => iconFor(type);
+
+  static String labelFor(String type) {
     switch (type) {
       case 'call':
         return 'Telefonata';
@@ -57,8 +72,7 @@ class Activity {
     }
   }
 
-  // Icona associata al tipo di attività
-  IconData get icon {
+  static IconData iconFor(String type) {
     switch (type) {
       case 'call':
         return Icons.phone_outlined;
