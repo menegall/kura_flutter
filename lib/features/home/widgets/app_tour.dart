@@ -106,7 +106,7 @@ class _TourOverlayState extends State<_TourOverlay> {
   }
 
   void _updateRect() {
-    final rect = _steps[_index].target == null ? null : _targetRect();
+    final rect = _targetRect(_index);
     if (rect != _rect) setState(() => _rect = rect);
   }
 
@@ -128,16 +128,18 @@ class _TourOverlayState extends State<_TourOverlay> {
         alignment: 0.5,
       );
     }
+    // La posizione del nuovo elemento si calcola prima di cambiare passo:
+    // così il fumetto va direttamente al suo posto, senza passare dal centro.
     if (mounted) {
       setState(() {
         _index = index;
-        _rect = null;
+        _rect = _targetRect(index);
       });
     }
   }
 
-  Rect? _targetRect() {
-    final targetContext = _steps[_index].target?.currentContext;
+  Rect? _targetRect(int index) {
+    final targetContext = _steps[index].target?.currentContext;
     final targetBox = targetContext?.findRenderObject() as RenderBox?;
     final overlayBox = context.findRenderObject() as RenderBox?;
     if (targetBox == null || overlayBox == null || !targetBox.attached || !targetBox.hasSize ||
@@ -254,14 +256,15 @@ class _HolePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final veil = Path()..addRect(Offset.zero & size);
-    final path = hole == null
-        ? veil
-        : Path.combine(
-            PathOperation.difference,
-            veil,
-            Path()..addRRect(RRect.fromRectAndRadius(hole!, const Radius.circular(16))),
-          );
+    // Riempimento pari-dispari: il rettangolo dello schermo meno il buco.
+    // Più affidabile di Path.combine, che nella versione web non ritagliava
+    // il buco e lasciava scuro anche l'elemento evidenziato.
+    final path = Path()
+      ..fillType = PathFillType.evenOdd
+      ..addRect(Offset.zero & size);
+    if (hole != null) {
+      path.addRRect(RRect.fromRectAndRadius(hole!, const Radius.circular(16)));
+    }
     canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.65));
     if (hole != null) {
       // Anello colorato intorno all'elemento, per renderlo evidente anche

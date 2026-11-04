@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import '../app_navigation.dart';
 import '../app_reload.dart';
 import '../app_update.dart';
 import '../theme.dart';
 
 /// Avviso "È disponibile un aggiornamento" con le principali novità.
 ///
-/// Controlla all'apertura e ogni volta che l'app torna in primo piano (al
-/// massimo ogni 15 minuti): sul telefono l'app installata resta aperta in
-/// background anche per giorni. «Aggiorna più tardi» lo nasconde fino alla
-/// prossima apertura dell'app.
+/// Controlla all'apertura, quando l'app torna in primo piano e a ogni cambio
+/// di scheda (al massimo ogni 5 minuti): sul telefono l'app installata resta
+/// aperta in background anche per giorni. «Aggiorna più tardi» lo nasconde
+/// fino alla prossima apertura dell'app.
 class UpdateBanner extends StatefulWidget {
   const UpdateBanner({super.key});
   @override
@@ -16,7 +17,7 @@ class UpdateBanner extends StatefulWidget {
 }
 
 class _UpdateBannerState extends State<UpdateBanner> {
-  static const _minInterval = Duration(minutes: 15);
+  static const _minInterval = Duration(minutes: 5);
   // Valida per tutta la sessione, anche se la pagina viene ricreata.
   static bool _postponed = false;
 
@@ -28,11 +29,13 @@ class _UpdateBannerState extends State<UpdateBanner> {
   void initState() {
     super.initState();
     _lifecycle = AppLifecycleListener(onResume: _check);
+    appDataRefresh.addListener(_check);
     _check();
   }
 
   @override
   void dispose() {
+    appDataRefresh.removeListener(_check);
     _lifecycle.dispose();
     super.dispose();
   }

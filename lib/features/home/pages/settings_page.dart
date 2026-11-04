@@ -39,6 +39,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadPupils();
     _checkForUpdate();
     appDataRefresh.addListener(_loadPupils);
+    appDataRefresh.addListener(_checkForUpdate);
   }
   Future<void> _checkForUpdate() async {
     final latest = await fetchLatestCommit();
@@ -51,6 +52,7 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void dispose() {
     appDataRefresh.removeListener(_loadPupils);
+    appDataRefresh.removeListener(_checkForUpdate);
     _nameController.dispose();
     _confirmController.dispose();
     super.dispose();
