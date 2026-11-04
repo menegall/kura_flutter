@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/app_reload.dart';
+import '../../../core/app_version.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../auth/services/auth_service.dart';
@@ -21,11 +23,23 @@ class _SettingsPageState extends State<SettingsPage> {
   List<Pupil>? _pupils;
   bool _isLoading = false;
   bool _isSavingName = false;
+  // Ultimo commit pubblicato sul sito (null finché non è noto).
+  String? _latestCommit;
+  bool _checkingUpdate = canCheckForUpdates;
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadPupils();
+    _checkForUpdate();
+  }
+  Future<void> _checkForUpdate() async {
+    final latest = await fetchLatestCommit();
+    if (!mounted) return;
+    setState(() {
+      _latestCommit = latest;
+      _checkingUpdate = false;
+    });
   }
   @override
   void dispose() {
@@ -85,6 +99,74 @@ class _SettingsPageState extends State<SettingsPage> {
     } finally {
       if (mounted) setState(() => _isSavingName = false);
     }
+  }
+  Widget _buildVersionCard() {
+    final updateAvailable = _latestCommit != null && _latestCommit != appCommit;
+    final Widget status;
+    if (_checkingUpdate) {
+      status = const Text(
+        'Controllo aggiornamenti…',
+        style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+      );
+    } else if (updateAvailable) {
+      status = Text(
+        'Nuova versione disponibile ($_latestCommit)',
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.terraCotta),
+      );
+    } else if (_latestCommit != null) {
+      status = const Text(
+        'Sei all\'ultima versione',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+      );
+    } else {
+      status = const SizedBox.shrink();
+    }
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: updateAvailable ? AppColors.terraCotta : AppColors.beige,
+          width: updateAvailable ? 1.5 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.darkGreen),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Versione $appVersionLabel',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      const SizedBox(height: 4),
+                      status,
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (updateAvailable) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: reloadApp,
+                icon: const Icon(Icons.system_update_alt),
+                label: const Text('Aggiorna ora'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
   }
   Future<void> _confirmLogout() async {
     final confirm = await showDialog<bool>(
@@ -492,6 +574,18 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 28),
+                  // Sezione Informazioni app (versione e aggiornamenti)
+                  const Text(
+                    'Informazioni app',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildVersionCard(),
                   const SizedBox(height: 28),
                   // Sezione Account (logout)
                   const Text(
