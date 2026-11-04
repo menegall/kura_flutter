@@ -74,7 +74,8 @@ class _HomePageState extends State<HomePage> {
     });
   }
   Future<void> _navigateToAddPupil() async {
-    final result = await Navigator.of(context).push(
+    // I form si aprono a schermo intero, sopra il menu.
+    final result = await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (context) => const AddPupilPage()),
     );
     if (result == true) {
@@ -105,7 +106,7 @@ class _HomePageState extends State<HomePage> {
     }
     final pupil = pupils.length == 1 ? pupils.first : await _choosePupil(pupils);
     if (pupil == null || !mounted) return;
-    final saved = await Navigator.of(context).push<bool>(
+    final saved = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (context) => AddActivityPage(pupil: pupil)),
     );
     if (saved == true && mounted) {
@@ -121,6 +122,7 @@ class _HomePageState extends State<HomePage> {
   Future<Pupil?> _choosePupil(List<Pupil> pupils) {
     return showModalBottomSheet<Pupil>(
       context: context,
+      useRootNavigator: true,
       showDragHandle: true,
       backgroundColor: AppColors.offWhite,
       isScrollControlled: true,

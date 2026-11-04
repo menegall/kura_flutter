@@ -16,6 +16,30 @@ final ValueNotifier<int> currentAppTab = ValueNotifier(AppTab.pupils);
 /// potrebbero essere cambiati nelle altre schede.
 final ValueNotifier<int> appDataRefresh = ValueNotifier(0);
 
+/// Ogni scheda ha il proprio navigatore: le pagine di dettaglio (pupillo,
+/// attività) si aprono dentro la scheda e il menu in basso resta visibile.
+/// I form si aprono invece sul navigatore principale, a schermo intero.
+final List<GlobalKey<NavigatorState>> tabNavigatorKeys = [
+  GlobalKey(debugLabel: 'tab-pupils'),
+  GlobalKey(debugLabel: 'tab-stats'),
+  GlobalKey(debugLabel: 'tab-settings'),
+];
+
+/// Riporta una scheda alla sua pagina principale.
+void resetTabToRoot(int tab) =>
+    tabNavigatorKeys[tab].currentState?.popUntil((route) => route.isFirst);
+
+/// Pupillo da selezionare nella scheda Statistiche (letto e azzerato dalla
+/// pagina Statistiche).
+final ValueNotifier<String?> requestedStatsPupilId = ValueNotifier(null);
+
+/// Passa alla scheda Statistiche mostrando il pupillo indicato.
+void openStatsForPupil(String pupilId) {
+  requestedStatsPupilId.value = pupilId;
+  resetTabToRoot(AppTab.stats);
+  currentAppTab.value = AppTab.stats;
+}
+
 /// Chiavi degli elementi evidenziati dal tutorial guidato.
 class TourKeys {
   static final addPupil = GlobalKey(debugLabel: 'tour-add-pupil');

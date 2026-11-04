@@ -179,9 +179,11 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
-  // Il tour evidenzia elementi della scheda Pupilli: prima ci si torna, poi
-  // si avvia quando la scheda è disegnata.
+  // Il tour evidenzia elementi della lista Pupilli: prima ci si torna
+  // (chiudendo un eventuale dettaglio aperto), poi si avvia quando la scheda
+  // è disegnata.
   void _replayTour() {
+    resetTabToRoot(AppTab.pupils);
     currentAppTab.value = AppTab.pupils;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) startAppTour(context);
@@ -208,7 +210,8 @@ class _SettingsPageState extends State<SettingsPage> {
     if (confirm != true) return;
     await _authService.signOut();
     if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
+      // Il login sostituisce tutta l'app, menu compreso.
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => const LoginPage()),
         (route) => false,
       );
@@ -399,7 +402,8 @@ class _SettingsPageState extends State<SettingsPage> {
       // Eseguiamo il logout locale per ripulire la sessione
       await _authService.signOut();
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
+        // Il login sostituisce tutta l'app, menu compreso.
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginPage()),
           (route) => false,
         );

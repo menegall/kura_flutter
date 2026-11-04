@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../core/app_navigation.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/widgets/hours_progress.dart';
@@ -10,7 +11,6 @@ import '../widgets/archive_pupil_dialog.dart';
 import 'add_activity_page.dart';
 import 'edit_pupil_page.dart';
 import 'activity_detail_page.dart';
-import 'stats_page.dart';
 
 class PupilDetailPage extends StatefulWidget {
   final Pupil pupil;
@@ -56,7 +56,8 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
   }
 
   Future<void> _navigateToAddActivity() async {
-    final result = await Navigator.of(context).push(
+    // I form si aprono a schermo intero, sopra il menu.
+    final result = await Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (context) => AddActivityPage(pupil: _pupil)),
     );
     if (result == true) {
@@ -91,7 +92,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
   }
 
   Future<void> _navigateToEditPupil() async {
-    final result = await Navigator.of(context).push<bool>(
+    final result = await Navigator.of(context, rootNavigator: true).push<bool>(
       MaterialPageRoute(builder: (context) => EditPupilPage(pupil: _pupil)),
     );
     if (result == true) {
@@ -313,11 +314,9 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
     );
   }
 
-  void _openStats() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => StatsPage(initialPupilId: _pupil.id)),
-    );
-  }
+  // Passa alla scheda Statistiche con questo pupillo, invece di aprire una
+  // seconda pagina Statistiche sopra il dettaglio.
+  void _openStats() => openStatsForPupil(_pupil.id);
 
   Widget _buildRecentActivitiesHeader() {
     return Row(
