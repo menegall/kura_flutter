@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import '../../../core/app_navigation.dart';
 import '../../../core/theme.dart';
 import '../../auth/services/auth_service.dart';
@@ -75,8 +76,39 @@ class _TourOverlay extends StatefulWidget {
 
 class _TourOverlayState extends State<_TourOverlay> {
   int _index = 0;
+  // Posizione dell'elemento evidenziato, riletta dopo ogni fotogramma
+  // disegnato: segue lo spostamento della pagina (banner che compare, lista
+  // che si ricarica, scroll) invece di restare quella iniziale. Non forza
+  // fotogrammi in più: si aggiorna solo quando l'app ridisegna comunque.
+  Rect? _rect;
+  bool _alive = true;
 
   bool get _isLast => _index == _steps.length - 1;
+
+  @override
+  void initState() {
+    super.initState();
+    SchedulerBinding.instance.addPersistentFrameCallback((_) {
+      if (!_alive) return;
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (_alive && mounted) _updateRect();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _alive = false;
+    // Se l'overlay sparisce senza passare da Fine/Salta (es. logout), il
+    // tour deve poter ripartire.
+    _activeTour = null;
+    super.dispose();
+  }
+
+  void _updateRect() {
+    final rect = _steps[_index].target == null ? null : _targetRect();
+    if (rect != _rect) setState(() => _rect = rect);
+  }
 
   Future<void> _goTo(int index) async {
     if (index >= _steps.length) {
@@ -96,18 +128,26 @@ class _TourOverlayState extends State<_TourOverlay> {
         alignment: 0.5,
       );
     }
-    if (mounted) setState(() => _index = index);
+    if (mounted) {
+      setState(() {
+        _index = index;
+        _rect = null;
+      });
+    }
   }
 
   Rect? _targetRect() {
     final targetContext = _steps[_index].target?.currentContext;
     final targetBox = targetContext?.findRenderObject() as RenderBox?;
     final overlayBox = context.findRenderObject() as RenderBox?;
-    if (targetBox == null || overlayBox == null || !targetBox.hasSize || !targetBox.attached) {
+    if (targetBox == null || overlayBox == null || !targetBox.attached || !targetBox.hasSize ||
+        !overlayBox.attached || !overlayBox.hasSize) {
       return null;
     }
-    final topLeft = targetBox.localToGlobal(Offset.zero, ancestor: overlayBox);
-    return (topLeft & targetBox.size).inflate(6);
+    // Entrambe le posizioni in coordinate dello schermo: l'overlay non è un
+    // antenato dell'elemento e su schermi larghi l'app è centrata.
+    final offset = targetBox.localToGlobal(Offset.zero) - overlayBox.localToGlobal(Offset.zero);
+    return (offset & targetBox.size).inflate(6);
   }
 
   @override
@@ -116,7 +156,7 @@ class _TourOverlayState extends State<_TourOverlay> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final screen = constraints.biggest;
-        final rect = step.target == null ? null : _targetRect();
+        final rect = step.target == null ? null : _rect;
         final cardWidth = (screen.width - 32).clamp(0.0, 360.0);
         final card = _buildCard(step, cardWidth);
 
@@ -223,6 +263,17 @@ class _HolePainter extends CustomPainter {
             Path()..addRRect(RRect.fromRectAndRadius(hole!, const Radius.circular(16))),
           );
     canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.65));
+    if (hole != null) {
+      // Anello colorato intorno all'elemento, per renderlo evidente anche
+      // quando ha lo stesso colore dello sfondo.
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(hole!, const Radius.circular(16)),
+        Paint()
+          ..color = AppColors.terraCotta
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3,
+      );
+    }
   }
 
   @override
