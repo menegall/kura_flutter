@@ -25,8 +25,13 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         final screenWidth = MediaQuery.of(context).size.width;
         // Il testo segue la dimensione scelta nelle impostazioni del
-        // telefono (accessibilità), senza riduzioni forzate.
-        final appWidget = child!;
+        // telefono (accessibilità) fino al 200%, il massimo raccomandato
+        // dalle linee guida WCAG: oltre, le schermate non sarebbero più
+        // leggibili su un telefono.
+        final appWidget = MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 2.0,
+          child: child!,
+        );
 
         if (screenWidth <= 600) {
           return appWidget;

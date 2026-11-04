@@ -54,6 +54,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Solo per i test: simula l'archivio locale usato da Supabase.
+  shared_preferences: ^2.5.5
+
   flutter_launcher_icons: ^0.13.1
 
   msix: ^3.16.0

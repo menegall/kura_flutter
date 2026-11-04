@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/app_navigation.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
+import '../../../core/widgets/adaptive_row.dart';
 import '../../../core/widgets/hours_progress.dart';
 import '../../../core/widgets/install_banner.dart';
 import '../../../core/widgets/update_banner.dart';
@@ -252,7 +253,8 @@ class _HomePageState extends State<HomePage> {
           crossAxisCount: screenWidth > 900 ? 3 : 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
-          mainAxisExtent: 140,
+          // L'altezza delle schede cresce con il testo (accessibilità).
+          mainAxisExtent: 90 + 60 * MediaQuery.textScalerOf(context).scale(1),
         ),
         itemCount: _pupils!.length + 1,
         itemBuilder: (context, index) {
@@ -322,6 +324,24 @@ class _HomePageState extends State<HomePage> {
     );
   }
   Widget _buildPupilCard(Pupil pupil, {bool useMargin = true}) {
+    final nameText = Text(
+      pupil.name,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: AppColors.darkGreen,
+      ),
+    );
+    final hoursText = Text(
+      '${formatDuration(pupil.workedHours)} / ${formatDuration(pupil.maxHours)}',
+      style: const TextStyle(
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+        color: AppColors.darkGreen,
+      ),
+    );
     return Card(
       color: Colors.white,
       margin: useMargin ? const EdgeInsets.only(bottom: 16.0) : EdgeInsets.zero,
@@ -338,30 +358,16 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      pupil.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.darkGreen,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    '${formatDuration(pupil.workedHours)} / ${formatDuration(pupil.maxHours)}',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.darkGreen,
-                    ),
-                  ),
-                ],
-              ),
+              // Con il testo ingrandito le ore vanno sotto il nome.
+              if (isLargeText(context))
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [nameText, const SizedBox(height: 4), hoursText],
+                )
+              else
+                Row(
+                  children: [Expanded(child: nameText), const SizedBox(width: 12), hoursText],
+                ),
               const SizedBox(height: 16),
               HoursProgress(
                 workedHours: pupil.workedHours,

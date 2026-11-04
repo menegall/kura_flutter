@@ -221,24 +221,36 @@ class _TourOverlayState extends State<_TourOverlay> {
           ),
           const SizedBox(height: 16),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
                 '${_index + 1} di ${_steps.length}',
                 style: const TextStyle(fontSize: 13, color: AppColors.blueGrey),
               ),
-              const Spacer(),
-              if (!_isLast)
-                TextButton(
-                  onPressed: widget.onFinish,
-                  child: const Text('Salta', style: TextStyle(color: AppColors.blueGrey)),
+              const SizedBox(width: 8),
+              // I pulsanti vanno uno sotto l'altro se il testo ingrandito
+              // non li fa stare affiancati.
+              Expanded(
+                child: OverflowBar(
+                  alignment: MainAxisAlignment.end,
+                  overflowAlignment: OverflowBarAlignment.end,
+                  spacing: 4,
+                  overflowSpacing: 4,
+                  children: [
+                    if (!_isLast)
+                      TextButton(
+                        onPressed: widget.onFinish,
+                        child: const Text('Salta', style: TextStyle(color: AppColors.blueGrey)),
+                      ),
+                    ElevatedButton(
+                      onPressed: () => _goTo(_index + 1),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: Text(_index == 0 ? 'Inizia' : _isLast ? 'Fine' : 'Avanti'),
+                    ),
+                  ],
                 ),
-              const SizedBox(width: 4),
-              ElevatedButton(
-                onPressed: () => _goTo(_index + 1),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-                child: Text(_index == 0 ? 'Inizia' : _isLast ? 'Fine' : 'Avanti'),
               ),
             ],
           ),

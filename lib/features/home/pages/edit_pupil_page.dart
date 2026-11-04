@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
+import '../../../core/widgets/adaptive_row.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
 class EditPupilPage extends StatefulWidget {
@@ -131,7 +132,7 @@ class _EditPupilPageState extends State<EditPupilPage> {
                   },
                 ),
                 const SizedBox(height: 20),
-                Row(
+                AdaptiveRow(
                   children: [
                     Expanded(
                       child: TextFormField(

@@ -88,14 +88,17 @@ class _UpdateBannerState extends State<UpdateBanner> {
                   style: const TextStyle(fontSize: 14, color: AppColors.darkGreen),
                 ),
               ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            // Uno sotto l'altro se il testo ingrandito non li fa stare in riga.
+            OverflowBar(
+              alignment: MainAxisAlignment.end,
+              overflowAlignment: OverflowBarAlignment.end,
+              spacing: 4,
+              overflowSpacing: 4,
               children: [
                 TextButton(
                   onPressed: () => setState(() => _postponed = true),
                   child: const Text('Aggiorna più tardi', style: TextStyle(color: AppColors.blueGrey)),
                 ),
-                const SizedBox(width: 4),
                 ElevatedButton(
                   onPressed: reloadApp,
                   style: ElevatedButton.styleFrom(

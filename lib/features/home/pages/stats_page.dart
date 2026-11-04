@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
+import '../../../core/widgets/adaptive_row.dart';
 import '../../../core/constant.dart';
 import '../../../core/app_navigation.dart';
 import '../../../core/billing.dart';
@@ -504,7 +505,8 @@ class _StatsPageState extends State<StatsPage> {
     if (_selectedPupil == null || _filteredActivities.isEmpty) {
       return const SizedBox.shrink();
     }
-    return Row(
+    return AdaptiveRow(
+      spacing: 12,
       children: [
         Expanded(
           child: ElevatedButton.icon(
@@ -538,6 +540,8 @@ class _StatsPageState extends State<StatsPage> {
     return DropdownButtonFormField<Pupil>(
       key: ObjectKey(_pupils),
       initialValue: _selectedPupil,
+      // Nomi lunghi o testo ingrandito: il nome si accorcia con "…".
+      isExpanded: true,
       decoration: const InputDecoration(
         labelText: 'Seleziona Pupillo',
         prefixIcon: Icon(Icons.person_outline, color: AppColors.blueGrey),
@@ -545,7 +549,10 @@ class _StatsPageState extends State<StatsPage> {
       items: _pupils!.map((pupil) {
         return DropdownMenuItem<Pupil>(
           value: pupil,
-          child: Text(pupil.isArchived ? '${pupil.name} (archiviato)' : pupil.name),
+          child: Text(
+            pupil.isArchived ? '${pupil.name} (archiviato)' : pupil.name,
+            overflow: TextOverflow.ellipsis,
+          ),
         );
       }).toList(),
       onChanged: (value) {
@@ -566,12 +573,14 @@ class _StatsPageState extends State<StatsPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Attività nel periodo',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.darkGreen,
+            const Expanded(
+              child: Text(
+                'Attività nel periodo',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.darkGreen,
+                ),
               ),
             ),
             IconButton(
@@ -666,22 +675,20 @@ class _StatsPageState extends State<StatsPage> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.calendar_today_outlined,
-                    color: AppColors.blueGrey,
+              const Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.blueGrey,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  formattedDay,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.darkGreen,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(width: 12),
-                  Text(
-                    formattedDay,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: AppColors.darkGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+                ),
               ),
               const Icon(
                 Icons.edit_calendar_outlined,
@@ -811,14 +818,9 @@ class _StatsPageState extends State<StatsPage> {
         const SizedBox(height: 20),
         _buildBillingCard(),
         const SizedBox(height: 20),
-        // Grid per Categoria
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.1,
+        // Schede per categoria, due per riga. Le righe sono alte quanto il
+        // contenuto: con il testo ingrandito non si taglia nulla.
+        _twoPerRow(
           children: [
             _buildStatCard(
               icon: Icons.phone_outlined,
@@ -848,6 +850,32 @@ class _StatsPageState extends State<StatsPage> {
             ),
           ],
         ),
+      ],
+    );
+  }
+
+  Widget _twoPerRow({required List<Widget> children}) {
+    const gap = 12.0;
+    return Column(
+      children: [
+        for (var i = 0; i < children.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: gap),
+          // Altezza minima come le vecchie schede quadrate; cresce se il
+          // contenuto non ci sta.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 130),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: children[i]),
+                  const SizedBox(width: gap),
+                  Expanded(child: i + 1 < children.length ? children[i + 1] : const SizedBox()),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -1159,8 +1187,10 @@ class _StatsPageState extends State<StatsPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 12,
                       children: [
                         Text(
                           activity.typeLabel,

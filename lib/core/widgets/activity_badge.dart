@@ -28,12 +28,15 @@ class ActivityBadge extends StatelessWidget {
         children: [
           Icon(icon, size: dense ? 10 : 12, color: AppColors.blueGrey),
           SizedBox(width: dense ? 3 : 4),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: dense ? 9 : 11,
-              color: AppColors.blueGrey,
-              fontWeight: dense ? FontWeight.bold : FontWeight.w600,
+          // Flexible: con il testo ingrandito va a capo invece di sforare.
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: dense ? 9 : 11,
+                color: AppColors.blueGrey,
+                fontWeight: dense ? FontWeight.bold : FontWeight.w600,
+              ),
             ),
           ),
         ],

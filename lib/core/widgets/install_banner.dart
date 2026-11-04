@@ -162,8 +162,11 @@ class _InstallBannerState extends State<InstallBanner> {
                   ),
                 ],
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
+              // Uno sotto l'altro se il testo ingrandito non li fa stare in riga.
+              OverflowBar(
+                alignment: MainAxisAlignment.end,
+                overflowAlignment: OverflowBarAlignment.end,
+                spacing: 4,
                 children: [
                   TextButton(
                     onPressed: _dismiss,

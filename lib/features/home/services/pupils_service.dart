@@ -1,9 +1,20 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 
 class PupilsService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  /// Nei test sostituisce il servizio con uno che restituisce dati finti,
+  /// senza Supabase.
+  @visibleForTesting
+  static PupilsService? testOverride;
+
+  factory PupilsService() => testOverride ?? PupilsService.base();
+
+  @protected
+  PupilsService.base();
+
+  SupabaseClient get _supabase => Supabase.instance.client;
 
   // Primo giorno dell'anno corrente in formato ISO (YYYY-MM-DD).
   // Le ore mostrate in home/dettaglio sono sempre relative all'anno corrente:

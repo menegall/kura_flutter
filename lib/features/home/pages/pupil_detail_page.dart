@@ -232,8 +232,12 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Va a capo se il testo ingrandito non ci sta su una riga.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 4,
               children: [
                 const Text(
                   'Ore svolte quest\'anno:',
@@ -255,8 +259,12 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
               maxHours: _pupil.maxHours,
             ),
             const Divider(height: 32, color: AppColors.beige),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Va a capo se il testo ingrandito non ci sta su una riga.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 4,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,8 +420,10 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
           foregroundColor: AppColors.darkGreen,
           child: Icon(activity.icon),
         ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        title: Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 12,
           children: [
             Text(
               activity.typeLabel,
