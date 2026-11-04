@@ -303,10 +303,11 @@ class _StatsPageState extends State<StatsPage> {
       // Chiude il loader solo se non è già stato chiuso nel path di successo,
       // altrimenti si farebbe pop() della pagina Statistiche.
       closeLoader();
+      debugPrint('Errore export PDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore durante l\'esportazione: $e'),
+          const SnackBar(
+            content: Text('Non è stato possibile generare il PDF. Controlla la connessione e riprova.'),
             backgroundColor: AppColors.terraCotta,
           ),
         );

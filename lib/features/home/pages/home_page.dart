@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
+import '../../../core/widgets/hours_progress.dart';
 import '../../auth/services/auth_service.dart';
-import '../../auth/pages/login_page.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
 import 'add_pupil_page.dart';
@@ -62,14 +63,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-  Future<void> _logout() async {
-    await _authService.signOut();
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    }
-  }
   Future<void> _navigateToAddPupil() async {
     final result = await Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const AddPupilPage()),
@@ -115,11 +108,6 @@ class _HomePageState extends State<HomePage> {
               _loadPupils();
             },
             tooltip: 'Impostazioni',
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Esci',
           ),
         ],
       ),
@@ -201,17 +189,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
   Widget _buildPupilCard(Pupil pupil, {bool useMargin = true}) {
-    final double rawPercent = pupil.maxHours > 0 ? (pupil.workedHours / pupil.maxHours) : 0.0;
-    final double percent = rawPercent.clamp(0.0, 1.0);
-    final double remainingHours = pupil.maxHours - pupil.workedHours;
-    Color progressColor;
-    if (rawPercent >= 1.0) {
-      progressColor = AppColors.terraCotta;
-    } else if (rawPercent >= 0.8) {
-      progressColor = AppColors.blueGrey;
-    } else {
-      progressColor = AppColors.darkGreen;
-    }
     return Card(
       color: Colors.white,
       margin: useMargin ? const EdgeInsets.only(bottom: 16.0) : EdgeInsets.zero,
@@ -241,8 +218,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Text(
-                    '${pupil.workedHours.toStringAsFixed(1)} / ${pupil.maxHours.toStringAsFixed(1)} h',
+                    '${formatDuration(pupil.workedHours)} / ${formatDuration(pupil.maxHours)}',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -252,35 +230,14 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: percent,
-                  backgroundColor: AppColors.beige,
-                  color: progressColor,
-                  minHeight: 12,
+              HoursProgress(
+                workedHours: pupil.workedHours,
+                maxHours: pupil.maxHours,
+                trailing: Icon(
+                  Icons.arrow_forward_ios,
+                  size: 14,
+                  color: AppColors.blueGrey.withValues(alpha: 0.7),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    rawPercent >= 1.0
-                        ? 'Ore esaurite!'
-                        : '${remainingHours.toStringAsFixed(1)} ore rimanenti',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: rawPercent >= 1.0 ? AppColors.terraCotta : AppColors.blueGrey,
-                    ),
-                  ),
-                  Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: AppColors.blueGrey.withValues(alpha: 0.7),
-                  ),
-                ],
               ),
             ],
           ),

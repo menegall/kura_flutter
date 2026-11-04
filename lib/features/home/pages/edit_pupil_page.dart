@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
 class EditPupilPage extends StatefulWidget {
@@ -37,9 +38,9 @@ class _EditPupilPageState extends State<EditPupilPage> {
     setState(() => _isLoading = true);
     try {
       final name = _nameController.text.trim();
-      final maxHours = double.parse(_hoursController.text.trim());
-      final tarif = double.parse(_tarifController.text.trim());
-      final kmTarif = double.parse(_kmTarifController.text.trim());
+      final maxHours = parseDecimal(_hoursController.text)!;
+      final tarif = parseDecimal(_tarifController.text)!;
+      final kmTarif = parseDecimal(_kmTarifController.text)!;
       await _pupilsService.updatePupil(
         id: widget.pupil.id,
         name: name,
@@ -122,7 +123,7 @@ class _EditPupilPageState extends State<EditPupilPage> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Inserisci le ore massime';
                     }
-                    final hours = double.tryParse(value.trim());
+                    final hours = parseDecimal(value);
                     if (hours == null || hours <= 0) {
                       return 'Inserisci un numero maggiore di 0';
                     }
@@ -144,7 +145,7 @@ class _EditPupilPageState extends State<EditPupilPage> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Inserisci tariffa';
                           }
-                          final rate = double.tryParse(value.trim());
+                          final rate = parseDecimal(value);
                           if (rate == null || rate < 0) {
                             return 'Minimo 0';
                           }
@@ -165,7 +166,7 @@ class _EditPupilPageState extends State<EditPupilPage> {
                           if (value == null || value.trim().isEmpty) {
                             return 'Inserisci tariffa km';
                           }
-                          final rate = double.tryParse(value.trim());
+                          final rate = parseDecimal(value);
                           if (rate == null || rate < 0) {
                             return 'Minimo 0';
                           }

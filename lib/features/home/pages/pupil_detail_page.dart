@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
+import '../../../core/widgets/hours_progress.dart';
 import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
@@ -72,20 +73,6 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Calcolo della percentuale
-    final double rawPercent = _pupil.maxHours > 0
-        ? (_pupil.workedHours / _pupil.maxHours)
-        : 0.0;
-    final double percent = rawPercent.clamp(0.0, 1.0);
-    final double remainingHours = _pupil.maxHours - _pupil.workedHours;
-    Color progressColor;
-    if (rawPercent >= 1.0) {
-      progressColor = AppColors.terraCotta;
-    } else if (rawPercent >= 0.8) {
-      progressColor = AppColors.blueGrey;
-    } else {
-      progressColor = AppColors.darkGreen;
-    }
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 750;
     return Scaffold(
@@ -136,12 +123,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                         // Sinistra: Statistiche e Tariffe
                         Expanded(
                           flex: 5,
-                          child: _buildStatsCard(
-                            percent,
-                            progressColor,
-                            remainingHours,
-                            rawPercent,
-                          ),
+                          child: _buildStatsCard(),
                         ),
                         const SizedBox(width: 24),
                         // Destra: Attività Recenti
@@ -161,12 +143,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildStatsCard(
-                          percent,
-                          progressColor,
-                          remainingHours,
-                          rawPercent,
-                        ),
+                        _buildStatsCard(),
                         const SizedBox(height: 24),
                         _buildRecentActivitiesHeader(),
                         const SizedBox(height: 12),
@@ -184,12 +161,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
     );
   }
 
-  Widget _buildStatsCard(
-    double percent,
-    Color progressColor,
-    double remainingHours,
-    double rawPercent,
-  ) {
+  Widget _buildStatsCard() {
     return Card(
       color: Colors.white,
       elevation: 0,
@@ -229,27 +201,9 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
               ],
             ),
             const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: percent,
-                backgroundColor: AppColors.beige,
-                color: progressColor,
-                minHeight: 12,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              rawPercent >= 1.0
-                  ? 'Ore esaurite!'
-                  : '${formatDuration(remainingHours)} rimanenti',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: rawPercent >= 1.0
-                    ? AppColors.terraCotta
-                    : AppColors.blueGrey,
-              ),
+            HoursProgress(
+              workedHours: _pupil.workedHours,
+              maxHours: _pupil.maxHours,
             ),
             const Divider(height: 32, color: AppColors.beige),
             Row(

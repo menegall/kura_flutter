@@ -36,10 +36,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         _activity = updated;
       });
     } catch (e) {
+      debugPrint('Errore ricaricamento attività: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore nel ricaricare l\'attività: $e'),
+          const SnackBar(
+            content: Text('Non è stato possibile aggiornare l\'attività. Controlla la connessione e riprova.'),
             backgroundColor: AppColors.terraCotta,
           ),
         );
@@ -107,10 +108,11 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
           ).pop(true); // Ritorna true per notificare la cancellazione
         }
       } catch (e) {
+        debugPrint('Errore eliminazione attività: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Errore durante l\'eliminazione: $e'),
+            const SnackBar(
+              content: Text('Non è stato possibile eliminare l\'attività. Controlla la connessione e riprova.'),
               backgroundColor: AppColors.terraCotta,
             ),
           );

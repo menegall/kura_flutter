@@ -84,6 +84,33 @@ class _SettingsPageState extends State<SettingsPage> {
       if (mounted) setState(() => _isSavingName = false);
     }
   }
+  Future<void> _confirmLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vuoi uscire?'),
+        content: const Text('Per rientrare dovrai inserire di nuovo email e password.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annulla', style: TextStyle(color: AppColors.blueGrey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Esci', style: TextStyle(color: AppColors.terraCotta, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await _authService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
   // Doppia conferma per l'eliminazione del pupillo
   Future<void> _confirmDeletePupil(Pupil pupil) async {
     // 1. Prima conferma
@@ -187,7 +214,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Conferma Finale Obligatoria'),
+              title: const Text('Conferma Finale Obbligatoria'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -252,10 +279,11 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       }
     } catch (e) {
+      debugPrint('Errore eliminazione account: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore durante la cancellazione dell\'account: $e'),
+          const SnackBar(
+            content: Text('Non è stato possibile eliminare l\'account. Controlla la connessione e riprova.'),
             backgroundColor: AppColors.terraCotta,
           ),
         );
@@ -413,6 +441,37 @@ class _SettingsPageState extends State<SettingsPage> {
                           fullscreenDialog: true,
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  // Sezione Account (logout)
+                  const Text(
+                    'Account',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.beige, width: 1),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.logout, color: AppColors.darkGreen),
+                      title: const Text(
+                        'Esci',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      subtitle: Text(
+                        Supabase.instance.client.auth.currentUser?.email ?? '',
+                        style: const TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                      ),
+                      onTap: _confirmLogout,
                     ),
                   ),
                   const SizedBox(height: 40),
