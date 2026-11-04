@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -18,7 +17,6 @@ class AuthService {
       password: password,
       data: {'name': name},
     );
-    await _saveLoginTimestamp();
     return response;
   }
 
@@ -30,7 +28,6 @@ class AuthService {
       email: email,
       password: password,
     );
-    await _saveLoginTimestamp();
     return response;
   }
 
@@ -43,16 +40,6 @@ class AuthService {
     try {
       await _supabase.auth.updateUser(
         UserAttributes(data: {'tutorial_seen': true}),
-      );
-    } catch (_) {}
-  }
-
-  Future<void> _saveLoginTimestamp() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-        'last_login_time',
-        DateTime.now().millisecondsSinceEpoch,
       );
     } catch (_) {}
   }
