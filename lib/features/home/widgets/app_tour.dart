@@ -266,17 +266,6 @@ class _HolePainter extends CustomPainter {
       path.addRRect(RRect.fromRectAndRadius(hole!, const Radius.circular(16)));
     }
     canvas.drawPath(path, Paint()..color = Colors.black.withValues(alpha: 0.65));
-    if (hole != null) {
-      // Anello colorato intorno all'elemento, per renderlo evidente anche
-      // quando ha lo stesso colore dello sfondo.
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(hole!, const Radius.circular(16)),
-        Paint()
-          ..color = AppColors.terraCotta
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3,
-      );
-    }
   }
 
   @override
