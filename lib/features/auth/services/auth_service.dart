@@ -11,11 +11,12 @@ class AuthService {
     required String password,
     required String name,
   }) async {
-    // Salviamo il nome nei metadati dell'utente usando il parametro `data`
+    // Salviamo il nome nei metadati dell'utente usando il parametro `data`.
+    // tutorial_seen: false fa partire il tour guidato al primo accesso.
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
-      data: {'name': name},
+      data: {'name': name, 'tutorial_seen': false},
     );
     return response;
   }
@@ -31,10 +32,12 @@ class AuthService {
     return response;
   }
 
-  /// Il flag sta nei metadati dell'utente su Supabase (non sul dispositivo),
-  /// così il tutorial non ricompare cambiando telefono o aprendo la webapp.
-  bool get hasSeenTutorial =>
-      _supabase.auth.currentUser?.userMetadata?['tutorial_seen'] == true;
+  /// Il tour guidato parte solo per gli account appena registrati, che
+  /// nascono con tutorial_seen = false: gli account creati prima non hanno
+  /// il flag e non lo vedono. Il flag sta nei metadati su Supabase (non sul
+  /// dispositivo), così non ricompare cambiando telefono o aprendo la webapp.
+  bool get shouldShowTutorial =>
+      _supabase.auth.currentUser?.userMetadata?['tutorial_seen'] == false;
 
   Future<void> markTutorialSeen() async {
     try {

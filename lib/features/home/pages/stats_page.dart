@@ -10,6 +10,7 @@ import 'package:open_filex/open_filex.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/constant.dart';
+import '../../../core/app_navigation.dart';
 import '../../../core/billing.dart';
 import '../../../core/file_saver.dart';
 import '../../../core/widgets/activity_badge.dart';
@@ -61,7 +62,14 @@ class _StatsPageState extends State<StatsPage> {
   @override
   void initState() {
     super.initState();
+    appDataRefresh.addListener(_loadPupils);
     _loadPupils();
+  }
+
+  @override
+  void dispose() {
+    appDataRefresh.removeListener(_loadPupils);
+    super.dispose();
   }
 
   Future<void> _loadPupils() async {
@@ -71,24 +79,30 @@ class _StatsPageState extends State<StatsPage> {
     });
     try {
       final list = await _pupilsService.getPupils(includeArchived: true);
+      if (!mounted) return;
       setState(() {
         _pupils = list;
         if (list.isNotEmpty) {
+          // Al ricaricamento resta selezionato lo stesso pupillo.
+          final wantedId = _selectedPupil?.id ?? widget.initialPupilId;
           _selectedPupil = list.firstWhere(
-            (p) => p.id == widget.initialPupilId,
+            (p) => p.id == wantedId,
             orElse: () => list.first,
           );
           _loadActivitiesForSelectedPupil();
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Impossibile caricare i pupilli. Riprova più tardi.';
       });
     } finally {
-      setState(() {
-        if (_pupils == null || _pupils!.isEmpty) _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (_pupils == null || _pupils!.isEmpty) _isLoading = false;
+        });
+      }
     }
   }
 
@@ -100,18 +114,22 @@ class _StatsPageState extends State<StatsPage> {
     });
     try {
       final list = await _pupilsService.getRecentActivities(_selectedPupil!.id);
+      if (!mounted) return;
       setState(() {
         _allActivities = list;
         _filterAndCalculate();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Impossibile caricare le attività del pupillo.';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -499,7 +517,10 @@ class _StatsPageState extends State<StatsPage> {
   }
 
   Widget _buildPupilSelector() {
+    // La chiave ricrea il campo quando la lista viene ricaricata: i pupilli
+    // sono oggetti nuovi e il valore iniziale deve venire dalla nuova lista.
     return DropdownButtonFormField<Pupil>(
+      key: ObjectKey(_pupils),
       initialValue: _selectedPupil,
       decoration: const InputDecoration(
         labelText: 'Seleziona Pupillo',

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'login_page.dart';
-import '../../home/pages/home_page.dart';
+import '../../home/pages/main_shell.dart';
 
 /// Sceglie la schermata iniziale in base alla sessione.
 ///
@@ -13,6 +13,6 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = Supabase.instance.client.auth.currentSession;
-    return session != null ? const HomePage() : const LoginPage();
+    return session != null ? const MainShell() : const LoginPage();
   }
 }

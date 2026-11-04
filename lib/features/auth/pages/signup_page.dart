@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
 import '../services/auth_service.dart';
-import '../../home/pages/home_page.dart';
+import '../../home/pages/main_shell.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -60,7 +60,7 @@ class _SignupPageState extends State<SignupPage> {
         return;
       }
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const HomePage()),
+        MaterialPageRoute(builder: (context) => const MainShell()),
         (route) => false, // Rimuove tutte le pagine precedenti
       );
     } on AuthException catch (e) {

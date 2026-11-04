@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/app_navigation.dart';
 import '../../../core/app_reload.dart';
 import '../../../core/app_version.dart';
 import '../../../core/theme.dart';
@@ -9,7 +10,7 @@ import '../../auth/pages/login_page.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
 import '../widgets/archive_pupil_dialog.dart';
-import 'tutorial_page.dart';
+import '../widgets/app_tour.dart';
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override
@@ -32,6 +33,7 @@ class _SettingsPageState extends State<SettingsPage> {
     _loadUserData();
     _loadPupils();
     _checkForUpdate();
+    appDataRefresh.addListener(_loadPupils);
   }
   Future<void> _checkForUpdate() async {
     final latest = await fetchLatestCommit();
@@ -43,6 +45,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
   @override
   void dispose() {
+    appDataRefresh.removeListener(_loadPupils);
     _nameController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -56,6 +59,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _loadPupils() async {
     try {
       final list = await _pupilsService.getPupils(includeArchived: true);
+      if (!mounted) return;
       setState(() {
         _pupils = list;
       });
@@ -167,6 +171,14 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+  // Il tour evidenzia elementi della scheda Pupilli: prima ci si torna, poi
+  // si avvia quando la scheda è disegnata.
+  void _replayTour() {
+    currentAppTab.value = AppTab.pupils;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) startAppTour(context);
+    });
   }
   Future<void> _confirmLogout() async {
     final confirm = await showDialog<bool>(
@@ -562,16 +574,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
                       ),
                       subtitle: const Text(
-                        'Come aggiungere pupilli, registrare attività ed esportare il PDF.',
+                        'Una guida veloce su dove trovare pupilli, attività, statistiche ed export.',
                         style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
                       ),
                       trailing: const Icon(Icons.chevron_right, color: AppColors.blueGrey),
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const TutorialPage(),
-                          fullscreenDialog: true,
-                        ),
-                      ),
+                      onTap: _replayTour,
                     ),
                   ),
                   const SizedBox(height: 28),
