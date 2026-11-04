@@ -2,6 +2,21 @@ import 'package:intl/intl.dart';
 
 final DateFormat _dayMonthYear = DateFormat('dd/MM/yyyy');
 
+const List<String> italianMonths = [
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre',
+];
+
 /// Formatta una data come `gg/MM/aaaa`.
 String formatDate(DateTime date) => _dayMonthYear.format(date);
 

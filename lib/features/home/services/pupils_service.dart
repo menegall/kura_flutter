@@ -12,17 +12,19 @@ class PupilsService {
   // (restano anche quelli senza attività quest'anno).
   static String get _startOfCurrentYear => '${DateTime.now().year}-01-01';
 
-  // Recupera tutti i pupilli dell'utente loggato, con le attività dell'anno
-  // corrente per sommare le ore lavorate.
-  Future<List<Pupil>> getPupils() async {
+  // Recupera i pupilli dell'utente loggato, con le attività dell'anno
+  // corrente per sommare le ore lavorate. Gli archiviati sono esclusi salvo
+  // [includeArchived] (statistiche e impostazioni).
+  Future<List<Pupil>> getPupils({bool includeArchived = false}) async {
     final currentUser = _supabase.auth.currentUser;
     if (currentUser == null) throw Exception('Utente non autenticato');
-    final response = await _supabase
+    var query = _supabase
         .from('pupils')
         .select('*, activities(duration, activity_date)')
         .eq('user_id', currentUser.id)
-        .gte('activities.activity_date', _startOfCurrentYear)
-        .order('name');
+        .gte('activities.activity_date', _startOfCurrentYear);
+    if (!includeArchived) query = query.isFilter('archived_at', null);
+    final response = await query.order('name');
     final list = response as List<dynamic>;
     return list
         .map((json) => Pupil.fromJson(json as Map<String, dynamic>))
@@ -126,6 +128,16 @@ class PupilsService {
     return list
         .map((json) => Activity.fromJson(json as Map<String, dynamic>))
         .toList();
+  }
+
+  // Archivia (mandato concluso) o ripristina un pupillo: le attività restano.
+  Future<void> setPupilArchived(String pupilId, bool archived) async {
+    await _supabase
+        .from('pupils')
+        .update({
+          'archived_at': archived ? DateTime.now().toUtc().toIso8601String() : null,
+        })
+        .eq('id', pupilId);
   }
 
   // Elimina un pupillo dal database

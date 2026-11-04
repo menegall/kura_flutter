@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme.dart';
+import '../../../core/utils.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/pages/login_page.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
+import '../widgets/archive_pupil_dialog.dart';
 import 'tutorial_page.dart';
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -39,7 +41,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
   Future<void> _loadPupils() async {
     try {
-      final list = await _pupilsService.getPupils();
+      final list = await _pupilsService.getPupils(includeArchived: true);
       setState(() {
         _pupils = list;
       });
@@ -109,6 +111,35 @@ class _SettingsPageState extends State<SettingsPage> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
         (route) => false,
       );
+    }
+  }
+  Future<void> _toggleArchived(Pupil pupil) async {
+    final archive = !pupil.isArchived;
+    if (archive) {
+      final confirm = await confirmArchivePupil(context, pupil);
+      if (!confirm) return;
+    }
+    try {
+      await _pupilsService.setPupilArchived(pupil.id, archive);
+      await _loadPupils();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(archive ? '${pupil.name} archiviato.' : '${pupil.name} ripristinato.'),
+            backgroundColor: AppColors.darkGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Errore archiviazione pupillo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Operazione non riuscita. Controlla la connessione e riprova.'),
+            backgroundColor: AppColors.terraCotta,
+          ),
+        );
+      }
     }
   }
   // Doppia conferma per l'eliminazione del pupillo
@@ -264,7 +295,7 @@ class _SettingsPageState extends State<SettingsPage> {
       // Eseguiamo la RPC PostgreSQL registrata su Supabase
       await Supabase.instance.client.rpc('delete_user');
       
-      // Eseguiamo il logout locale per ripulire sessione e SharedPreferences
+      // Eseguiamo il logout locale per ripulire la sessione
       await _authService.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -391,16 +422,34 @@ class _SettingsPageState extends State<SettingsPage> {
                                   return ListTile(
                                     title: Text(
                                       pupil.name,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.darkGreen),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: pupil.isArchived ? AppColors.blueGrey : AppColors.darkGreen,
+                                      ),
                                     ),
                                     subtitle: Text(
-                                      '${pupil.maxHours.toStringAsFixed(1)} ore max/anno',
+                                      pupil.isArchived
+                                          ? 'Archiviato il ${formatDate(pupil.archivedAt!.toLocal())}'
+                                          : '${formatDuration(pupil.maxHours)} max/anno',
                                       style: const TextStyle(color: AppColors.blueGrey, fontSize: 13),
                                     ),
-                                    trailing: IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: AppColors.terraCotta),
-                                      onPressed: () => _confirmDeletePupil(pupil),
-                                      tooltip: 'Elimina pupillo',
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            pupil.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                                            color: AppColors.darkGreen,
+                                          ),
+                                          onPressed: () => _toggleArchived(pupil),
+                                          tooltip: pupil.isArchived ? 'Ripristina pupillo' : 'Archivia pupillo',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: AppColors.terraCotta),
+                                          onPressed: () => _confirmDeletePupil(pupil),
+                                          tooltip: 'Elimina pupillo',
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },

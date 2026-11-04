@@ -6,9 +6,11 @@ import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
+import '../widgets/archive_pupil_dialog.dart';
 import 'add_activity_page.dart';
 import 'edit_pupil_page.dart';
 import 'activity_detail_page.dart';
+import 'stats_page.dart';
 
 class PupilDetailPage extends StatefulWidget {
   final Pupil pupil;
@@ -62,6 +64,32 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
     }
   }
 
+  Future<void> _archivePupil() async {
+    final confirm = await confirmArchivePupil(context, _pupil);
+    if (!confirm) return;
+    try {
+      await _pupilsService.setPupilArchived(_pupil.id, true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${_pupil.name} archiviato. Lo trovi nelle Impostazioni.'),
+          backgroundColor: AppColors.darkGreen,
+        ),
+      );
+      Navigator.of(context).pop();
+    } catch (e) {
+      debugPrint('Errore archiviazione pupillo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Non è stato possibile archiviare il pupillo. Controlla la connessione e riprova.'),
+            backgroundColor: AppColors.terraCotta,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _navigateToEditPupil() async {
     final result = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (context) => EditPupilPage(pupil: _pupil)),
@@ -86,10 +114,30 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
             onPressed: _navigateToEditPupil,
             tooltip: 'Modifica',
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Aggiorna',
+          PopupMenuButton<String>(
+            tooltip: 'Altre azioni',
+            onSelected: (value) {
+              if (value == 'refresh') _loadData();
+              if (value == 'archive') _archivePupil();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: 'refresh',
+                child: ListTile(
+                  leading: Icon(Icons.refresh),
+                  title: Text('Aggiorna'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'archive',
+                child: ListTile(
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Archivia pupillo'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -247,9 +295,27 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: _openStats,
+              icon: const Icon(Icons.bar_chart_rounded),
+              label: const Text('Statistiche, PDF e CSV'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.darkGreen,
+                side: const BorderSide(color: AppColors.darkGreen),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _openStats() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => StatsPage(initialPupilId: _pupil.id)),
     );
   }
 
@@ -258,7 +324,7 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         const Text(
-          'Attività Recenti',
+          'Attività',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -275,18 +341,47 @@ class _PupilDetailPageState extends State<PupilDetailPage> {
     );
   }
 
+  // Attività raggruppate per mese (già ordinate dalla più recente), con il
+  // totale delle ore del mese nell'intestazione.
   Widget _buildRecentActivitiesList() {
-    return _activities == null || _activities!.isEmpty
-        ? _buildEmptyState()
-        : ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _activities!.length,
-            itemBuilder: (context, index) {
-              final activity = _activities![index];
-              return _buildActivityItem(activity);
-            },
-          );
+    if (_activities == null || _activities!.isEmpty) return _buildEmptyState();
+    final children = <Widget>[];
+    for (final group in groupActivitiesByMonth(_activities!)) {
+      children.add(_buildMonthHeader(group));
+      children.addAll(group.activities.map(_buildActivityItem));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+
+  Widget _buildMonthHeader(MonthGroup group) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${italianMonths[group.month - 1]} ${group.year}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGreen,
+              ),
+            ),
+          ),
+          Text(
+            formatDuration(group.totalHours),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.blueGrey,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildActivityItem(Activity activity) {
