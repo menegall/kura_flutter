@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -12,13 +11,13 @@ class AuthService {
     required String password,
     required String name,
   }) async {
-    // Salviamo il nome nei metadati dell'utente usando il parametro `data`
+    // Salviamo il nome nei metadati dell'utente usando il parametro `data`.
+    // tutorial_seen: false fa partire il tour guidato al primo accesso.
     final response = await _supabase.auth.signUp(
       email: email,
       password: password,
-      data: {'name': name},
+      data: {'name': name, 'tutorial_seen': false},
     );
-    await _saveLoginTimestamp();
     return response;
   }
 
@@ -30,16 +29,20 @@ class AuthService {
       email: email,
       password: password,
     );
-    await _saveLoginTimestamp();
     return response;
   }
 
-  Future<void> _saveLoginTimestamp() async {
+  /// Il tour guidato parte solo per gli account appena registrati, che
+  /// nascono con tutorial_seen = false: gli account creati prima non hanno
+  /// il flag e non lo vedono. Il flag sta nei metadati su Supabase (non sul
+  /// dispositivo), così non ricompare cambiando telefono o aprendo la webapp.
+  bool get shouldShowTutorial =>
+      _supabase.auth.currentUser?.userMetadata?['tutorial_seen'] == false;
+
+  Future<void> markTutorialSeen() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(
-        'last_login_time',
-        DateTime.now().millisecondsSinceEpoch,
+      await _supabase.auth.updateUser(
+        UserAttributes(data: {'tutorial_seen': true}),
       );
     } catch (_) {}
   }

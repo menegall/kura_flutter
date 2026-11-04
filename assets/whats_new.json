@@ -1,0 +1,17 @@
+{
+  "_info": "Novità mostrate nel banner di aggiornamento. Aggiungi in cima una release con id più alto a ogni rilascio in produzione: l'app mostra le release con id maggiore della propria.",
+  "releases": [
+    {
+      "id": 1,
+      "date": "2026-11-04",
+      "items": [
+        "Nuovo menu in basso: Pupilli, Statistiche e Impostazioni",
+        "Registra un'attività in pochi tocchi con il pulsante + e le durate rapide",
+        "Archivia i pupilli con il mandato concluso, senza perdere le loro attività",
+        "Esporta le attività in CSV per Excel, oltre al PDF",
+        "Resti collegato: niente più login ogni settimana",
+        "Installa Kura sulla schermata Home e ricevi un avviso a ogni aggiornamento"
+      ]
+    }
+  ]
+}

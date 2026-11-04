@@ -38,8 +38,23 @@ class Activity {
       createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
+  /// Tipi di attività nell'ordine in cui compaiono nel form.
+  static const List<String> types = [
+    'call',
+    'meeting_pupils',
+    'meeting_various',
+    'mail',
+    'transfert',
+    'other',
+  ];
+
   // Metodo per visualizzare il tipo in Italiano
-  String get typeLabel {
+  String get typeLabel => labelFor(type);
+
+  // Icona associata al tipo di attività
+  IconData get icon => iconFor(type);
+
+  static String labelFor(String type) {
     switch (type) {
       case 'call':
         return 'Telefonata';
@@ -57,8 +72,7 @@ class Activity {
     }
   }
 
-  // Icona associata al tipo di attività
-  IconData get icon {
+  static IconData iconFor(String type) {
     switch (type) {
       case 'call':
         return Icons.phone_outlined;
@@ -75,4 +89,31 @@ class Activity {
         return Icons.work_outline;
     }
   }
+}
+
+/// Attività di un mese, con il totale delle ore.
+class MonthGroup {
+  final int year;
+  final int month;
+  final List<Activity> activities;
+
+  MonthGroup(this.year, this.month, this.activities);
+
+  double get totalHours =>
+      activities.fold(0.0, (sum, a) => sum + (a.duration ?? 0));
+}
+
+/// Raggruppa per mese attività già ordinate per data, mantenendo l'ordine.
+List<MonthGroup> groupActivitiesByMonth(List<Activity> activities) {
+  final groups = <MonthGroup>[];
+  for (final activity in activities) {
+    final date = activity.activityDate;
+    final last = groups.isEmpty ? null : groups.last;
+    if (last != null && last.year == date.year && last.month == date.month) {
+      last.activities.add(activity);
+    } else {
+      groups.add(MonthGroup(date.year, date.month, [activity]));
+    }
+  }
+  return groups;
 }

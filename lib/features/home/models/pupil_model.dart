@@ -6,6 +6,8 @@ class Pupil {
   final double workedHours;
   final double tarif;
   final double kmTarif;
+  // Data di archiviazione: null se il pupillo è attivo.
+  final DateTime? archivedAt;
   Pupil({
     required this.id,
     required this.userId,
@@ -14,7 +16,10 @@ class Pupil {
     required this.workedHours,
     required this.tarif,
     required this.kmTarif,
+    this.archivedAt,
   });
+
+  bool get isArchived => archivedAt != null;
   factory Pupil.fromJson(Map<String, dynamic> json) {
     // Somma le ore spese (hours_spent) da tutte le attività collegate nell'anno corrente
     final activitiesList = json['activities'] as List<dynamic>? ?? [];
@@ -38,6 +43,9 @@ class Pupil {
       workedHours: totalWorked,
       tarif: (json['tarif'] as num?)?.toDouble() ?? 0.0,
       kmTarif: (json['km_tarif'] as num?)?.toDouble() ?? 0.0,
+      archivedAt: json['archived_at'] != null
+          ? DateTime.parse(json['archived_at'] as String)
+          : null,
     );
   }
 }

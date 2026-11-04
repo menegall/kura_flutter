@@ -30,7 +30,18 @@ jobs:
           cache: true
 
       - run: flutter pub get
-      - run: flutter build web --release
+      # Commit e data finiscono nell'app (Impostazioni -> Informazioni app);
+      # build_info.json dice all'app qual è l'ultima versione online.
+      - name: Build web
+        run: |
+          COMMIT="${GITHUB_SHA::7}"
+          RELEASE="$(jq '[.releases[].id] | max' assets/whats_new.json)"
+          flutter build web --release \
+            --dart-define=APP_COMMIT="$COMMIT" \
+            --dart-define=APP_RELEASE="$RELEASE" \
+            --dart-define=APP_BUILD_DATE="$(date -u +%Y-%m-%d)" \
+            --dart-define=APP_CHANNEL="${{ github.ref_name }}"
+          echo "{\"commit\":\"$COMMIT\"}" > build/web/build_info.json
       # flutter build non copia _headers in build/web
       - run: cp web/_headers build/web/_headers
 

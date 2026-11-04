@@ -27,4 +27,19 @@ void main() {
       expect(formatDuration(0.99999), '1h');
     });
   });
+
+  group('parseDecimal', () {
+    test('accetta punto e virgola', () {
+      expect(parseDecimal('15.5'), 15.5);
+      expect(parseDecimal('15,5'), 15.5);
+      expect(parseDecimal(' 1,20 '), 1.2);
+      expect(parseDecimal('3'), 3);
+    });
+
+    test('testo non valido -> null', () {
+      expect(parseDecimal(''), isNull);
+      expect(parseDecimal('abc'), isNull);
+      expect(parseDecimal('1,2,3'), isNull);
+    });
+  });
 }

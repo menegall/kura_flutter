@@ -10,15 +10,20 @@ import 'package:open_filex/open_filex.dart';
 import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/constant.dart';
+import '../../../core/app_navigation.dart';
 import '../../../core/billing.dart';
+import '../../../core/file_saver.dart';
 import '../../../core/widgets/activity_badge.dart';
 import '../models/pupil_model.dart';
 import '../models/activity_model.dart';
 import '../services/pupils_service.dart';
+import '../services/activities_csv.dart';
 import 'activity_detail_page.dart';
 
 class StatsPage extends StatefulWidget {
-  const StatsPage({super.key});
+  /// Pupillo da mostrare all'apertura (es. dal dettaglio pupillo).
+  final String? initialPupilId;
+  const StatsPage({super.key, this.initialPupilId});
   @override
   State<StatsPage> createState() => _StatsPageState();
 }
@@ -50,20 +55,6 @@ class _StatsPageState extends State<StatsPage> {
   double _totalKm = 0.0;
   double _totalStamps = 0.0;
   BillingSummary _billing = BillingSummary.empty;
-  final List<String> _monthsItalian = [
-    'Gennaio',
-    'Febbraio',
-    'Marzo',
-    'Aprile',
-    'Maggio',
-    'Giugno',
-    'Luglio',
-    'Agosto',
-    'Settembre',
-    'Ottobre',
-    'Novembre',
-    'Dicembre',
-  ];
   final List<int> _years = List.generate(
     10,
     (index) => DateTime.now().year - 5 + index,
@@ -71,7 +62,14 @@ class _StatsPageState extends State<StatsPage> {
   @override
   void initState() {
     super.initState();
+    appDataRefresh.addListener(_loadPupils);
     _loadPupils();
+  }
+
+  @override
+  void dispose() {
+    appDataRefresh.removeListener(_loadPupils);
+    super.dispose();
   }
 
   Future<void> _loadPupils() async {
@@ -80,22 +78,31 @@ class _StatsPageState extends State<StatsPage> {
       _errorMessage = null;
     });
     try {
-      final list = await _pupilsService.getPupils();
+      final list = await _pupilsService.getPupils(includeArchived: true);
+      if (!mounted) return;
       setState(() {
         _pupils = list;
         if (list.isNotEmpty) {
-          _selectedPupil = list.first;
+          // Al ricaricamento resta selezionato lo stesso pupillo.
+          final wantedId = _selectedPupil?.id ?? widget.initialPupilId;
+          _selectedPupil = list.firstWhere(
+            (p) => p.id == wantedId,
+            orElse: () => list.first,
+          );
           _loadActivitiesForSelectedPupil();
         }
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Impossibile caricare i pupilli. Riprova più tardi.';
       });
     } finally {
-      setState(() {
-        if (_pupils == null || _pupils!.isEmpty) _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          if (_pupils == null || _pupils!.isEmpty) _isLoading = false;
+        });
+      }
     }
   }
 
@@ -107,18 +114,22 @@ class _StatsPageState extends State<StatsPage> {
     });
     try {
       final list = await _pupilsService.getRecentActivities(_selectedPupil!.id);
+      if (!mounted) return;
       setState(() {
         _allActivities = list;
         _filterAndCalculate();
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Impossibile caricare le attività del pupillo.';
       });
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -303,10 +314,11 @@ class _StatsPageState extends State<StatsPage> {
       // Chiude il loader solo se non è già stato chiuso nel path di successo,
       // altrimenti si farebbe pop() della pagina Statistiche.
       closeLoader();
+      debugPrint('Errore export PDF: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore durante l\'esportazione: $e'),
+          const SnackBar(
+            content: Text('Non è stato possibile generare il PDF. Controlla la connessione e riprova.'),
             backgroundColor: AppColors.terraCotta,
           ),
         );
@@ -324,17 +336,9 @@ class _StatsPageState extends State<StatsPage> {
     final isWide = screenWidth > 800;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistiche Interattive'),
+        title: const Text('Statistiche'),
         backgroundColor: AppColors.darkGreen,
         foregroundColor: Colors.white,
-        actions: [
-          if (_selectedPupil != null && _filteredActivities.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: _isExporting ? null : _exportPdf,
-              tooltip: 'Esporta PDF',
-            ),
-        ],
       ),
       body: _isLoading && _pupils == null
           ? const Center(
@@ -386,7 +390,14 @@ class _StatsPageState extends State<StatsPage> {
                                         ),
                                       ),
                                     )
-                                  : _buildStatsSummary(),
+                                  : Column(
+                                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildStatsSummary(),
+                                        const SizedBox(height: 20),
+                                        _buildExportButtons(),
+                                      ],
+                                    ),
                             ],
                           ),
                         ),
@@ -422,6 +433,8 @@ class _StatsPageState extends State<StatsPage> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   _buildStatsSummary(),
+                                  const SizedBox(height: 20),
+                                  _buildExportButtons(),
                                   const SizedBox(height: 24),
                                   _buildFilteredActivitiesSection(),
                                 ],
@@ -432,15 +445,92 @@ class _StatsPageState extends State<StatsPage> {
     );
   }
 
+  Future<void> _exportCsv() async {
+    final pupil = _selectedPupil;
+    if (pupil == null) return;
+    // Nel file le attività vanno sempre dalla più vecchia alla più recente,
+    // qualunque sia l'ordinamento scelto a schermo.
+    final activities = [..._filteredActivities]
+      ..sort((a, b) => a.activityDate.compareTo(b.activityDate));
+    final String period;
+    if (_selectedPeriod == 'Giorno') {
+      period = '${_selectedDay.year}-${_twoDigits(_selectedDay.month)}-${_twoDigits(_selectedDay.day)}';
+    } else if (_selectedPeriod == 'Mese') {
+      period = '$_selectedYear-${_twoDigits(_selectedMonth)}';
+    } else {
+      period = '$_selectedYear';
+    }
+    final safeName = pupil.name.trim().replaceAll(RegExp(r'[^A-Za-z0-9À-ÿ]+'), '_');
+    try {
+      await saveTextFile(
+        'kura_${safeName}_$period.csv',
+        buildActivitiesCsv(activities),
+        mimeType: 'text/csv',
+      );
+    } catch (e) {
+      debugPrint('Errore export CSV: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Non è stato possibile creare il file CSV.'),
+            backgroundColor: AppColors.terraCotta,
+          ),
+        );
+      }
+    }
+  }
+
+  String _twoDigits(int n) => n.toString().padLeft(2, '0');
+
+  // Esportazione del periodo selezionato: PDF (rendiconto) e CSV (dati
+  // grezzi da aprire in Excel).
+  Widget _buildExportButtons() {
+    if (_selectedPupil == null || _filteredActivities.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: _isExporting ? null : _exportPdf,
+            icon: const Icon(Icons.picture_as_pdf_outlined),
+            label: const Text('Esporta PDF'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: _exportCsv,
+            icon: const Icon(Icons.table_chart_outlined),
+            label: const Text('Esporta CSV'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.darkGreen,
+              side: const BorderSide(color: AppColors.darkGreen),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPupilSelector() {
+    // La chiave ricrea il campo quando la lista viene ricaricata: i pupilli
+    // sono oggetti nuovi e il valore iniziale deve venire dalla nuova lista.
     return DropdownButtonFormField<Pupil>(
+      key: ObjectKey(_pupils),
       initialValue: _selectedPupil,
       decoration: const InputDecoration(
         labelText: 'Seleziona Pupillo',
         prefixIcon: Icon(Icons.person_outline, color: AppColors.blueGrey),
       ),
       items: _pupils!.map((pupil) {
-        return DropdownMenuItem<Pupil>(value: pupil, child: Text(pupil.name));
+        return DropdownMenuItem<Pupil>(
+          value: pupil,
+          child: Text(pupil.isArchived ? '${pupil.name} (archiviato)' : pupil.name),
+        );
       }).toList(),
       onChanged: (value) {
         if (value != null) {
@@ -597,7 +687,7 @@ class _StatsPageState extends State<StatsPage> {
               items: List.generate(12, (index) {
                 return DropdownMenuItem<int>(
                   value: index + 1,
-                  child: Text(_monthsItalian[index]),
+                  child: Text(italianMonths[index]),
                 );
               }),
               onChanged: (value) {

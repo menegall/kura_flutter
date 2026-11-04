@@ -42,6 +42,18 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Salva il prompt di installazione (Chrome/Edge) prima che Flutter parta:
+    // lo usa il banner "Installa Kura" (lib/core/install_prompt_web.dart).
+    window.kuraInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function (event) {
+      event.preventDefault();
+      window.kuraInstallPrompt = event;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.kuraInstallPrompt = null;
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

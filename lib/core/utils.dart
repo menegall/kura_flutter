@@ -2,8 +2,29 @@ import 'package:intl/intl.dart';
 
 final DateFormat _dayMonthYear = DateFormat('dd/MM/yyyy');
 
+const List<String> italianMonths = [
+  'Gennaio',
+  'Febbraio',
+  'Marzo',
+  'Aprile',
+  'Maggio',
+  'Giugno',
+  'Luglio',
+  'Agosto',
+  'Settembre',
+  'Ottobre',
+  'Novembre',
+  'Dicembre',
+];
+
 /// Formatta una data come `gg/MM/aaaa`.
 String formatDate(DateTime date) => _dayMonthYear.format(date);
+
+/// Converte un numero inserito dall'utente accettando sia la virgola sia il
+/// punto come separatore decimale ("15,5" e "15.5"). Restituisce null se il
+/// testo è vuoto o non è un numero.
+double? parseDecimal(String text) =>
+    double.tryParse(text.trim().replaceAll(',', '.'));
 
 String formatDuration(double hours) {
   int h = hours.floor();

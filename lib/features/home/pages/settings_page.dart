@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/app_navigation.dart';
+import '../../../core/app_reload.dart';
+import '../../../core/app_version.dart';
+import '../../../core/install_platform.dart';
+import '../../../core/install_prompt.dart';
 import '../../../core/theme.dart';
+import '../../../core/widgets/install_banner.dart';
+import '../../../core/utils.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/pages/login_page.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
+import '../widgets/archive_pupil_dialog.dart';
+import '../widgets/app_tour.dart';
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
   @override
@@ -18,14 +27,32 @@ class _SettingsPageState extends State<SettingsPage> {
   List<Pupil>? _pupils;
   bool _isLoading = false;
   bool _isSavingName = false;
+  // Dispositivo su cui installare l'app; null se già installata o nativa.
+  final InstallPlatform? _installPlatform = installPlatform();
+  // Ultimo commit pubblicato sul sito (null finché non è noto).
+  String? _latestCommit;
+  bool _checkingUpdate = canCheckForUpdates;
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _loadPupils();
+    _checkForUpdate();
+    appDataRefresh.addListener(_loadPupils);
+    appDataRefresh.addListener(_checkForUpdate);
+  }
+  Future<void> _checkForUpdate() async {
+    final latest = await fetchLatestCommit();
+    if (!mounted) return;
+    setState(() {
+      _latestCommit = latest;
+      _checkingUpdate = false;
+    });
   }
   @override
   void dispose() {
+    appDataRefresh.removeListener(_loadPupils);
+    appDataRefresh.removeListener(_checkForUpdate);
     _nameController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -38,7 +65,8 @@ class _SettingsPageState extends State<SettingsPage> {
   }
   Future<void> _loadPupils() async {
     try {
-      final list = await _pupilsService.getPupils();
+      final list = await _pupilsService.getPupils(includeArchived: true);
+      if (!mounted) return;
       setState(() {
         _pupils = list;
       });
@@ -81,6 +109,138 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } finally {
       if (mounted) setState(() => _isSavingName = false);
+    }
+  }
+  Widget _buildVersionCard() {
+    final updateAvailable = _latestCommit != null && _latestCommit != appCommit;
+    final Widget status;
+    if (_checkingUpdate) {
+      status = const Text(
+        'Controllo aggiornamenti…',
+        style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+      );
+    } else if (updateAvailable) {
+      status = Text(
+        'Nuova versione disponibile ($_latestCommit)',
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.terraCotta),
+      );
+    } else if (_latestCommit != null) {
+      status = const Text(
+        'Sei all\'ultima versione',
+        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+      );
+    } else {
+      status = const SizedBox.shrink();
+    }
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: updateAvailable ? AppColors.terraCotta : AppColors.beige,
+          width: updateAvailable ? 1.5 : 1,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.info_outline, color: AppColors.darkGreen),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Versione $appVersionLabel',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      const SizedBox(height: 4),
+                      status,
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (updateAvailable) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: reloadApp,
+                icon: const Icon(Icons.system_update_alt),
+                label: const Text('Aggiorna ora'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+  // Il tour evidenzia elementi della scheda Pupilli: prima ci si torna, poi
+  // si avvia quando la scheda è disegnata.
+  void _replayTour() {
+    currentAppTab.value = AppTab.pupils;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) startAppTour(context);
+    });
+  }
+  Future<void> _confirmLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Vuoi uscire?'),
+        content: const Text('Per rientrare dovrai inserire di nuovo email e password.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Annulla', style: TextStyle(color: AppColors.blueGrey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Esci', style: TextStyle(color: AppColors.terraCotta, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await _authService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginPage()),
+        (route) => false,
+      );
+    }
+  }
+  Future<void> _toggleArchived(Pupil pupil) async {
+    final archive = !pupil.isArchived;
+    if (archive) {
+      final confirm = await confirmArchivePupil(context, pupil);
+      if (!confirm) return;
+    }
+    try {
+      await _pupilsService.setPupilArchived(pupil.id, archive);
+      await _loadPupils();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(archive ? '${pupil.name} archiviato.' : '${pupil.name} ripristinato.'),
+            backgroundColor: AppColors.darkGreen,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Errore archiviazione pupillo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Operazione non riuscita. Controlla la connessione e riprova.'),
+            backgroundColor: AppColors.terraCotta,
+          ),
+        );
+      }
     }
   }
   // Doppia conferma per l'eliminazione del pupillo
@@ -186,7 +346,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
             return AlertDialog(
-              title: const Text('Conferma Finale Obligatoria'),
+              title: const Text('Conferma Finale Obbligatoria'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -236,7 +396,7 @@ class _SettingsPageState extends State<SettingsPage> {
       // Eseguiamo la RPC PostgreSQL registrata su Supabase
       await Supabase.instance.client.rpc('delete_user');
       
-      // Eseguiamo il logout locale per ripulire sessione e SharedPreferences
+      // Eseguiamo il logout locale per ripulire la sessione
       await _authService.signOut();
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -251,10 +411,11 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       }
     } catch (e) {
+      debugPrint('Errore eliminazione account: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Errore durante la cancellazione dell\'account: $e'),
+          const SnackBar(
+            content: Text('Non è stato possibile eliminare l\'account. Controlla la connessione e riprova.'),
             backgroundColor: AppColors.terraCotta,
           ),
         );
@@ -362,21 +523,138 @@ class _SettingsPageState extends State<SettingsPage> {
                                   return ListTile(
                                     title: Text(
                                       pupil.name,
-                                      style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.darkGreen),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: pupil.isArchived ? AppColors.blueGrey : AppColors.darkGreen,
+                                      ),
                                     ),
                                     subtitle: Text(
-                                      '${pupil.maxHours.toStringAsFixed(1)} ore max/anno',
+                                      pupil.isArchived
+                                          ? 'Archiviato il ${formatDate(pupil.archivedAt!.toLocal())}'
+                                          : '${formatDuration(pupil.maxHours)} max/anno',
                                       style: const TextStyle(color: AppColors.blueGrey, fontSize: 13),
                                     ),
-                                    trailing: IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: AppColors.terraCotta),
-                                      onPressed: () => _confirmDeletePupil(pupil),
-                                      tooltip: 'Elimina pupillo',
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(
+                                            pupil.isArchived ? Icons.unarchive_outlined : Icons.archive_outlined,
+                                            color: AppColors.darkGreen,
+                                          ),
+                                          onPressed: () => _toggleArchived(pupil),
+                                          tooltip: pupil.isArchived ? 'Ripristina pupillo' : 'Archivia pupillo',
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: AppColors.terraCotta),
+                                          onPressed: () => _confirmDeletePupil(pupil),
+                                          tooltip: 'Elimina pupillo',
+                                        ),
+                                      ],
                                     ),
                                   );
                                 },
                               ),
                             ),
+                  const SizedBox(height: 28),
+                  // Sezione Guida (tutorial iniziale)
+                  const Text(
+                    'Guida',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.beige, width: 1),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.school_outlined, color: AppColors.terraCotta),
+                      title: const Text(
+                        'Rivedi il tutorial',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      subtitle: const Text(
+                        'Una guida veloce su dove trovare pupilli, attività, statistiche ed export.',
+                        style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                      ),
+                      trailing: const Icon(Icons.chevron_right, color: AppColors.blueGrey),
+                      onTap: _replayTour,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  // Sezione Informazioni app (versione e aggiornamenti)
+                  const Text(
+                    'Informazioni app',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildVersionCard(),
+                  if (_installPlatform != null) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      color: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: AppColors.beige, width: 1),
+                      ),
+                      child: ListTile(
+                        leading: Icon(installCopy(_installPlatform, false).$1, color: AppColors.terraCotta),
+                        title: const Text(
+                          'Aggiungi alla schermata Home',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        ),
+                        subtitle: const Text(
+                          'Apri Kura dall\'icona, a schermo intero, come un\'app.',
+                          style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: AppColors.blueGrey),
+                        onTap: () => installOrExplain(context, _installPlatform),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 28),
+                  // Sezione Account (logout)
+                  const Text(
+                    'Account',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Card(
+                    color: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: const BorderSide(color: AppColors.beige, width: 1),
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.logout, color: AppColors.darkGreen),
+                      title: const Text(
+                        'Esci',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                      ),
+                      subtitle: Text(
+                        Supabase.instance.client.auth.currentUser?.email ?? '',
+                        style: const TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                      ),
+                      onTap: _confirmLogout,
+                    ),
+                  ),
                   const SizedBox(height: 40),
                   // Sezione Operazioni Pericolose (Cancellazione account)
                   const Divider(color: AppColors.beige, thickness: 1.5),
