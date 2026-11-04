@@ -2,6 +2,13 @@
   "_info": "Novità mostrate nel banner di aggiornamento. Aggiungi in cima una release con id più alto a ogni rilascio in produzione: l'app mostra le release con id maggiore della propria.",
   "releases": [
     {
+      "id": 3,
+      "date": "2026-11-04",
+      "items": [
+        "Nella registrazione di un'attività le note tornano subito dopo il tipo, prima della durata"
+      ]
+    },
+    {
       "id": 2,
       "date": "2026-11-04",
       "items": [
