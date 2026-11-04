@@ -5,6 +5,7 @@ import '../../../core/theme.dart';
 import '../../../core/utils.dart';
 import '../../../core/widgets/hours_progress.dart';
 import '../../../core/widgets/install_banner.dart';
+import '../../../core/widgets/update_banner.dart';
 import '../../auth/services/auth_service.dart';
 import '../models/pupil_model.dart';
 import '../services/pupils_service.dart';
@@ -181,6 +182,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
+          const UpdateBanner(),
           const InstallBanner(),
           Expanded(
             child: RefreshIndicator(
@@ -252,7 +254,7 @@ class _HomePageState extends State<HomePage> {
         ),
         itemCount: _pupils!.length + 1,
         itemBuilder: (context, index) {
-          if (index == _pupils!.length) return _buildAddPupilButton();
+          if (index == _pupils!.length) return _buildAddPupilTile();
           return _buildPupilCard(_pupils![index], useMargin: false);
         },
       );
@@ -281,6 +283,39 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.symmetric(vertical: 18),
         textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+    );
+  }
+  // Nella griglia (web, tablet, telefono in orizzontale) "Aggiungi pupillo"
+  // è una scheda come le altre, invece di un pulsante grande quanto la cella.
+  Widget _buildAddPupilTile() {
+    return Card(
+      key: TourKeys.addPupil,
+      color: Colors.white,
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.beige, width: 1.5),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _navigateToAddPupil,
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AppColors.beige,
+              child: Icon(Icons.person_add_alt_1_outlined, color: AppColors.terraCotta),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Aggiungi pupillo',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,0 +1,16 @@
+{
+  "_info": "Novità mostrate nel banner di aggiornamento. Aggiungi in cima una release con id più alto a ogni rilascio in produzione: l'app mostra le release con id maggiore della propria.",
+  "releases": [
+    {
+      "id": 1,
+      "date": "2026-11-04",
+      "items": [
+        "Nuovo menu in basso: Pupilli, Statistiche e Impostazioni",
+        "Il pulsante + registra subito un'attività",
+        "Registrazione delle attività più veloce, con durate rapide",
+        "Pupilli archiviabili ed export delle attività in CSV",
+        "Resti collegato senza dover rifare il login ogni settimana"
+      ]
+    }
+  ]
+}

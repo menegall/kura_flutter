@@ -3,7 +3,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/app_navigation.dart';
 import '../../../core/app_reload.dart';
 import '../../../core/app_version.dart';
+import '../../../core/install_platform.dart';
+import '../../../core/install_prompt.dart';
 import '../../../core/theme.dart';
+import '../../../core/widgets/install_banner.dart';
 import '../../../core/utils.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/pages/login_page.dart';
@@ -24,6 +27,8 @@ class _SettingsPageState extends State<SettingsPage> {
   List<Pupil>? _pupils;
   bool _isLoading = false;
   bool _isSavingName = false;
+  // Dispositivo su cui installare l'app; null se già installata o nativa.
+  final InstallPlatform? _installPlatform = installPlatform();
   // Ultimo commit pubblicato sul sito (null finché non è noto).
   String? _latestCommit;
   bool _checkingUpdate = canCheckForUpdates;
@@ -593,6 +598,30 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(height: 12),
                   _buildVersionCard(),
+                  if (_installPlatform != null) ...[
+                    const SizedBox(height: 12),
+                    Card(
+                      color: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: const BorderSide(color: AppColors.beige, width: 1),
+                      ),
+                      child: ListTile(
+                        leading: Icon(installCopy(_installPlatform, false).$1, color: AppColors.terraCotta),
+                        title: const Text(
+                          'Aggiungi alla schermata Home',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.darkGreen),
+                        ),
+                        subtitle: const Text(
+                          'Apri Kura dall\'icona, a schermo intero, come un\'app.',
+                          style: TextStyle(fontSize: 13, color: AppColors.blueGrey),
+                        ),
+                        trailing: const Icon(Icons.chevron_right, color: AppColors.blueGrey),
+                        onTap: () => installOrExplain(context, _installPlatform),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 28),
                   // Sezione Account (logout)
                   const Text(

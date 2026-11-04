@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 const String appCommit = String.fromEnvironment('APP_COMMIT');
 const String appBuildDate = String.fromEnvironment('APP_BUILD_DATE');
 const String appChannel = String.fromEnvironment('APP_CHANNEL');
+// Id della release più recente in assets/whats_new.json al momento della
+// build: serve a capire quali novità l'utente non ha ancora visto.
+const int appReleaseId = int.fromEnvironment('APP_RELEASE');
 
 /// Testo della versione da mostrare all'utente, es. "a1b2c3d del 04/11/2026".
 String get appVersionLabel {

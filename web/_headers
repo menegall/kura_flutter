@@ -22,3 +22,6 @@
 
 /build_info.json
   Cache-Control: no-cache
+
+/assets/assets/whats_new.json
+  Cache-Control: no-cache
